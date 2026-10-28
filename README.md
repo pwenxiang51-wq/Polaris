@@ -186,4 +186,8 @@ Local unit tests and static checks do not replace end-to-end verification on the
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Copyright (c) 2026 pwenxiang51-wq. Copyright © 2026 Velox | All rights reserved.
+
+Polaris is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
+
+Previous license: versions up to 2026-10-28 were MIT (see git history). From 2026-10-29 onward, modified versions must also be released under AGPLv3, including when run as a network service.
