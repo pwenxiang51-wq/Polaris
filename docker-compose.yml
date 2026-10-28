@@ -1,0 +1,76 @@
+services:
+  polaris:
+    build:
+      context: .
+    image: polaris:local
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    env_file:
+      - ./secrets/polaris.env
+    secrets:
+      - admin_password_hash
+      - session_secret
+      - turnstile_secret
+    expose:
+      - "8080"
+    volumes:
+      - polaris-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,noexec,nosuid,nodev
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.50
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel", "--no-autoupdate", "run", "--token-file", "/run/secrets/cf_tunnel_token"]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      polaris:
+        condition: service_healthy
+    user: "65532:65532"
+    secrets:
+      - cf_tunnel_token
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 64m
+    cpus: 0.25
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,noexec,nosuid,nodev
+
+secrets:
+  admin_password_hash:
+    file: ./secrets/admin-password-hash
+  session_secret:
+    file: ./secrets/session-secret
+  turnstile_secret:
+    file: ./secrets/turnstile-secret
+  cf_tunnel_token:
+    file: ./secrets/cloudflared.token
+
+volumes:
+  polaris-data:

@@ -1,0 +1,28 @@
+[Unit]
+Description=Polaris Server Monitoring Probe
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=polaris-agent
+Group=polaris-agent
+EnvironmentFile=/etc/polaris-agent.env
+ExecStart=/usr/local/bin/polaris-agent
+Restart=always
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadOnlyPaths=/proc /sys /etc/os-release
+
+[Install]
+WantedBy=multi-user.target

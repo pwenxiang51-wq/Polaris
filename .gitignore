@@ -1,0 +1,13 @@
+/secrets/polaris.env
+/secrets/admin-password-hash
+/secrets/session-secret
+/secrets/turnstile-secret
+/secrets/cloudflared.token
+/data/
+*.log
+.DS_Store
+.idea/
+.vscode/
+coverage.out
+
+dist/

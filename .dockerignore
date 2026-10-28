@@ -1,0 +1,11 @@
+# Exclude repository metadata, generated artifacts, runtime data, and local secrets.
+.git/
+.github/
+secrets/
+data/
+dist/
+*.log
+*.zip
+*.tar.gz
+polaris-dashboard-linux-amd64
+polaris-agent-linux-amd64

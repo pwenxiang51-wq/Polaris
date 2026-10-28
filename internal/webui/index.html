@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="referrer" content="no-referrer">
+  <title>Polaris · Server Monitor</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/polaris.svg">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/chart-utils.js" defer></script>
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div id="authView" class="auth-shell">
+    <div class="auth-topbar">
+      <a class="brand" href="/" aria-label="Polaris home">
+        <span class="brand-mark"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3.5 29.2 18.8 44.5 24 29.2 29.2 24 44.5 18.8 29.2 3.5 24 18.8 18.8 24 3.5Z"/><circle cx="24" cy="24" r="4.2"/></svg></span>
+        <span class="brand-word">Polaris<span class="brand-period">.</span></span>
+      </a>
+      <div class="top-actions">
+        <button class="icon-button" id="languageButton" type="button" aria-label="Switch language"><span class="button-glyph">文</span><span id="languageLabel">中文</span></button>
+        <button class="icon-button theme-button" id="themeButton" type="button" aria-label="Switch theme"><span id="themeGlyph">☼</span><span id="themeLabel">Light mode</span></button>
+      </div>
+    </div>
+    <main class="login-main">
+      <div class="login-copy">
+        <div class="eyebrow"><span class="pulse-dot"></span><span data-i18n="privateConsole">PRIVATE INFRASTRUCTURE CONSOLE</span></div>
+        <h1 data-i18n="loginTitle">Your servers.<br>One clear view.</h1>
+        <p data-i18n="loginSubtitle">A lightweight monitoring station, built for the small machines that keep your world running.</p>
+        <div class="login-stats">
+          <div><span class="stat-number">15<span>s</span></span><span class="stat-caption" data-i18n="reportEvery">REPORT INTERVAL</span></div>
+          <div><span class="stat-number">1<span>GB</span></span><span class="stat-caption" data-i18n="smallFootprint">SMALL-HOST FRIENDLY</span></div>
+          <div><span class="stat-number">TLS</span><span class="stat-caption" data-i18n="secureByDefault">SECURE BY DEFAULT</span></div>
+        </div>
+      </div>
+      <section class="login-card" aria-labelledby="loginHeading">
+        <div class="card-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="login-card-heading">
+          <div class="mini-mark"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3.5 29.2 18.8 44.5 24 29.2 29.2 24 44.5 18.8 29.2 3.5 24 18.8 18.8 24 3.5Z"/><circle cx="24" cy="24" r="4.2"/></svg></div>
+          <div><h2 id="loginHeading" data-i18n="welcomeBack">Welcome back</h2><p data-i18n="loginCardSubtitle">Sign in to your private console</p></div>
+        </div>
+        <form id="loginForm" autocomplete="on">
+          <label for="username" data-i18n="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" maxlength="64" required>
+          <label for="password" data-i18n="password">Password</label>
+          <div class="password-wrap"><input id="password" name="password" type="password" autocomplete="current-password" required><button class="password-toggle" id="passwordToggle" type="button" data-i18n="showPassword">Show</button></div>
+          <div id="turnstileBox" class="turnstile-box"><div id="turnstileWidget"></div><p id="turnstileHint" class="field-hint" data-i18n="humanVerification">Human verification is required to sign in.</p></div>
+          <div id="loginError" class="form-message" role="alert" hidden></div>
+          <button class="primary-button login-submit" id="loginSubmit" type="submit"><span data-i18n="signIn">Sign in</span><span class="arrow-glyph">↗</span></button>
+        </form>
+        <div class="secure-note"><span class="lock-glyph">◈</span><span data-i18n="sessionNote">Protected session · HttpOnly cookie · Turnstile verification</span></div>
+      </section>
+    </main>
+    <footer class="site-footer"><span>POLARIS <span class="footer-separator">/</span> OBSERVABILITY</span><span data-i18n="footerPrivate">Private by design. Yours to operate.</span></footer>
+  </div>
+
+  <div id="dashboardView" class="dashboard-shell" hidden>
+    <header class="dashboard-header">
+      <a class="brand" href="/" aria-label="Polaris home">
+        <span class="brand-mark"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3.5 29.2 18.8 44.5 24 29.2 29.2 24 44.5 18.8 29.2 3.5 24 18.8 18.8 24 3.5Z"/><circle cx="24" cy="24" r="4.2"/></svg></span>
+        <span class="brand-word">Polaris<span class="brand-period">.</span></span>
+      </a>
+      <div class="header-center"><span class="live-chip"><span class="pulse-dot"></span><span data-i18n="liveMonitor">LIVE MONITOR</span></span><span class="header-divider"></span><span class="header-subtitle" data-i18n="privateInfrastructure">Private infrastructure</span></div>
+      <div class="top-actions">
+        <button class="icon-button" id="dashLanguageButton" type="button"><span class="button-glyph">文</span><span id="dashLanguageLabel">中文</span></button>
+        <button class="icon-button theme-button" id="dashThemeButton" type="button"><span id="dashThemeGlyph">☼</span><span id="dashThemeLabel">Light mode</span></button>
+        <button class="icon-button logout-button" id="logoutButton" type="button"><span class="logout-glyph">↗</span><span data-i18n="signOut">Sign out</span></button>
+      </div>
+    </header>
+    <main class="dashboard-main">
+      <section class="page-intro">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="overviewEyebrow">INFRASTRUCTURE / OVERVIEW</span></div><h1 data-i18n="dashboardTitle">Everything, in orbit.</h1><p data-i18n="dashboardSubtitle">A live view of your nodes, resource pressure and network health.</p></div>
+        <button class="primary-button add-node-button" id="addNodeButton" type="button"><span class="plus-glyph">＋</span><span data-i18n="addProbe">Add probe</span></button>
+      </section>
+      <section class="summary-grid" aria-label="Summary">
+        <article class="summary-card"><div class="summary-top"><span data-i18n="totalNodes">TOTAL NODES</span><span class="summary-icon">⌘</span></div><div class="summary-value" id="summaryTotal">—</div><div class="summary-foot"><span class="summary-led neutral-led"></span><span data-i18n="registeredProbes">Registered probes</span></div><div class="summary-accent accent-blue"></div></article>
+        <article class="summary-card"><div class="summary-top"><span data-i18n="onlineNodes">ONLINE NODES</span><span class="summary-icon">◉</span></div><div class="summary-value" id="summaryOnline">—</div><div class="summary-foot"><span class="summary-led"></span><span data-i18n="reportingNow">Reporting right now</span></div><div class="summary-accent accent-green"></div></article>
+        <article class="summary-card"><div class="summary-top"><span data-i18n="averageCpu">AVERAGE CPU</span><span class="summary-icon">⌁</span></div><div class="summary-value" id="summaryCPU">—<small>%</small></div><div class="summary-foot"><span class="summary-led accent-purple-led"></span><span data-i18n="acrossOnline">Across online nodes</span></div><div class="summary-accent accent-purple"></div></article>
+        <article class="summary-card"><div class="summary-top"><span data-i18n="networkThroughput">NETWORK THROUGHPUT</span><span class="summary-icon">⇅</span></div><div class="summary-value summary-throughput" id="summaryTraffic">—</div><div class="summary-foot"><span class="summary-led accent-orange-led"></span><span data-i18n="combinedTraffic">Combined in + out</span></div><div class="summary-accent accent-orange"></div></article>
+      </section>
+      <section class="nodes-heading"><div><h2 data-i18n="yourNodes">Your nodes</h2><p data-i18n="nodeSubtitle">Host-level metrics from your installed probes.</p></div><div class="nodes-heading-right"><span class="refresh-indicator"><span class="refresh-ring"></span><span data-i18n="refreshing">Refreshes every 10s</span></span><button id="refreshButton" class="icon-button compact-button" type="button" aria-label="Refresh now">↻</button></div></section>
+      <div id="globalMessage" class="global-message" role="status" hidden></div>
+      <section id="nodesGrid" class="nodes-grid" aria-live="polite"></section>
+      <section id="emptyState" class="empty-state" hidden><div class="empty-orbit"><span></span><span></span><span></span><b>✦</b></div><h2 data-i18n="noNodesTitle">Your orbit is quiet.</h2><p data-i18n="noNodesText">Create a probe token, install the lightweight agent on a Linux host, and your first node will appear here.</p><button class="primary-button" id="emptyAddNodeButton" type="button"><span class="plus-glyph">＋</span><span data-i18n="addFirstProbe">Add your first probe</span></button></section>
+      <footer class="dashboard-footer"><span><span class="footer-logo">✦</span> POLARIS <span class="footer-separator">/</span> <span data-i18n="footerMonitor">SERVER MONITOR</span></span><span><span class="footer-status-dot"></span><span data-i18n="footerLocal">Metrics collected by your own probes</span></span><span id="lastRefreshLabel">—</span></footer>
+    </main>
+  </div>
+
+  <div id="nodeModal" class="modal-backdrop" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="nodeModalTitle">
+      <button class="modal-close" id="closeNodeModal" type="button" aria-label="Close">×</button>
+      <div id="nodeFormPane"><div class="modal-kicker" data-i18n="newProbeKicker">NEW MONITORING AGENT</div><h2 id="nodeModalTitle" data-i18n="createProbeTitle">Bring a node into orbit.</h2><p data-i18n="createProbeText">Create a one-time token for a Linux probe. The token is shown only once.</p><form id="nodeForm"><label for="nodeName" data-i18n="nodeDisplayName">Display name</label><input id="nodeName" name="nodeName" type="text" maxlength="80" placeholder="Los Angeles · Edge 01" required><label for="nodeId" data-i18n="nodeIdentifier">Node identifier</label><input id="nodeId" name="nodeId" type="text" maxlength="48" pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,47}" placeholder="la-edge-01" required><p class="field-hint" data-i18n="nodeIdHint">Use letters, numbers, dots, underscores or hyphens.</p><div id="nodeFormError" class="form-message" role="alert" hidden></div><button class="primary-button full-button" id="createTokenButton" type="submit"><span data-i18n="generateToken">Generate one-time token</span><span class="arrow-glyph">↗</span></button></form></div>
+      <div id="tokenPane" hidden><div class="modal-kicker success-kicker" data-i18n="tokenCreated">TOKEN CREATED</div><h2 data-i18n="saveTokenNow">Save this token now.</h2><p data-i18n="tokenWarning">Polaris stores only a token hash. This raw token will not be shown again.</p><label for="createdToken" data-i18n="agentToken">Agent token</label><div class="copy-field"><input id="createdToken" type="password" readonly autocomplete="off"><button id="revealTokenButton" class="icon-button" type="button" data-i18n="showPassword">Show</button><button id="copyTokenButton" class="icon-button" type="button" data-i18n="copy">Copy</button></div><label for="agentConfigSnippet" data-i18n="agentConfig">Agent environment</label><textarea id="agentConfigSnippet" rows="5" readonly spellcheck="false"></textarea><button id="copyConfigButton" class="secondary-button full-button" type="button" data-i18n="copyConfig">Copy agent configuration</button><p class="field-hint" data-i18n="agentNextStep">Install the polaris-agent binary and place these values in a root-readable environment file.</p><button id="doneTokenButton" class="primary-button full-button" type="button" data-i18n="done">Done</button></div>
+    </section>
+  </div>
+  <div id="metadataModal" class="modal-backdrop" hidden>
+    <section class="modal-card metadata-modal-card" role="dialog" aria-modal="true" aria-labelledby="metadataNodeTitle">
+      <button class="modal-close" id="closeMetadataModal" type="button" aria-label="Close">×</button>
+      <div class="modal-kicker" data-i18n="manageNode">NODE DETAILS</div>
+      <h2 id="metadataNodeTitle" data-i18n="nodeMetadataTitle">Node details and allowances</h2>
+      <p data-i18n="nodeMetadataText">Optional fields are hidden until set. Identity overrides are used when automatic detection is unavailable.</p>
+      <form id="metadataForm">
+        <div class="metadata-form-grid">
+          <div><label for="metaExpiryDate" data-i18n="expiryDate">Expiry date</label><input id="metaExpiryDate" type="date"></div>
+          <div><label for="metaPriceUSD" data-i18n="priceUSD">Price (USD)</label><input id="metaPriceUSD" type="number" min="0" max="1000000" step="0.01" inputmode="decimal"></div>
+          <div><label for="metaMonthlyQuota" data-i18n="monthlyQuota">Monthly traffic quota (GiB)</label><input id="metaMonthlyQuota" type="number" min="0" step="0.001" inputmode="decimal"></div>
+          <div><label for="metaTotalQuota" data-i18n="totalQuota">Total traffic quota (GiB)</label><input id="metaTotalQuota" type="number" min="0" step="0.001" inputmode="decimal"></div>
+        </div>
+        <h3 class="metadata-subheading" data-i18n="identityOverrides">Identity overrides</h3>
+        <div class="metadata-form-grid">
+          <div><label for="metaIPv4" data-i18n="publicIPv4">Public IPv4</label><input id="metaIPv4" type="text" maxlength="64" autocomplete="off"></div>
+          <div><label for="metaIPv6" data-i18n="publicIPv6">Public IPv6</label><input id="metaIPv6" type="text" maxlength="64" autocomplete="off"></div>
+          <div><label for="metaCountry" data-i18n="countryName">Country / region</label><input id="metaCountry" type="text" maxlength="80"></div>
+          <div><label for="metaCountryCode" data-i18n="countryCode">Country code</label><input id="metaCountryCode" type="text" maxlength="2" pattern="[A-Za-z]{2}"></div>
+          <div><label for="metaRegion" data-i18n="regionName">Region / state</label><input id="metaRegion" type="text" maxlength="100"></div>
+          <div><label for="metaCity" data-i18n="cityName">City</label><input id="metaCity" type="text" maxlength="100"></div>
+          <div><label for="metaISP" data-i18n="ispName">ISP</label><input id="metaISP" type="text" maxlength="160"></div>
+          <div><label for="metaASN" data-i18n="asnName">ASN</label><input id="metaASN" type="text" maxlength="40"></div>
+        </div>
+        <div id="metadataFormError" class="form-message" role="alert" hidden></div>
+        <button class="primary-button full-button" id="saveMetadataButton" type="submit" data-i18n="saveMetadata">Save details</button>
+      </form>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
