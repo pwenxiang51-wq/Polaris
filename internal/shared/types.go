@@ -25,6 +25,7 @@ type Report struct {
 	Name           string         `json:"name"`
 	Hostname       string         `json:"hostname"`
 	OS             string         `json:"os"`
+	OSID           string         `json:"os_id"`
 	Kernel         string         `json:"kernel"`
 	Arch           string         `json:"arch"`
 	Country        string         `json:"country"`
