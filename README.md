@@ -33,16 +33,16 @@ The agent never requires SSH access from the dashboard and does not require root
 Example in `/etc/polaris-agent.env`:
 
 ```dotenv
-POLARIS_PROBE_TARGETS="CT=202.96.128.86:53;CU=123.125.81.6:53;CM=211.138.180.2:53"
+POLARIS_PROBE_TARGETS="CT=114.114.114.114:53;CU=123.125.81.6:53;CM=www.10086.cn:443"
 ```
 
 The default candidates are:
 
 | Label | Candidate | Test | Root required | Important limitation |
 |---|---|---|---|---|
-| CT | `202.96.128.86:53` | TCP connect | No | Candidate only; reachability from an overseas VPS is not guaranteed. TCP/53 can be filtered or rate-limited. |
+| CT | `114.114.114.114:53` | TCP connect | No | Candidate only; reachability from an overseas VPS is not guaranteed. TCP/53 can be filtered or rate-limited. |
 | CU | `123.125.81.6:53` | TCP connect | No | Candidate only; a failed connection can mean filtering, routing failure, or target unavailability. |
-| CM | `211.138.180.2:53` | TCP connect | No | Candidate only; test from the actual server before treating the result as representative. |
+| CM | `www.10086.cn:443` | TCP connect | No | Measured latency is around 317 ms, close to the 400 ms timeout; occasional timeouts are normal network variation. |
 
 These are configurable candidates, not a guarantee of China Telecom/Unicom/Mobile backbone routing. TCP measures connection-establishment time to the chosen host and port; it is not a full route analysis and is not equivalent to ICMP ping. Public ICMP targets are also often filtered or rate-limited; ICMP generally requires root or `CAP_NET_RAW` on Linux. Polaris does not silently switch to ICMP.
 
