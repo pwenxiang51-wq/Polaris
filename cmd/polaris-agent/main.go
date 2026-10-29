@@ -165,7 +165,7 @@ func collect(ctx context.Context, cfg AgentConfig) (shared.Report, error) {
 	kernel := kernelRelease()
 	return shared.Report{
 		NodeID: cfg.NodeID, Name: cfg.NodeName, Hostname: hostname,
-		OS: osName, Kernel: kernel, Arch: runtime.GOARCH,
+		OS: osName, OSID: osID(), Kernel: kernel, Arch: runtime.GOARCH,
 		PublicIPv4: publicIPv4, PublicIPv6: publicIPv6,
 		CPUPercent: cpuPercent, CPUCount: runtime.NumCPU(),
 		MemTotalBytes: memTotal, MemUsedBytes: maxUint64(0, memTotal-memAvailable),
@@ -339,6 +339,22 @@ func networkCounters() (uint64, uint64) {
 	return rxTotal, txTotal
 }
 
+func osID() string {
+	file, err := os.Open("/etc/os-release")
+	if err != nil {
+		return runtime.GOOS
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "ID=") {
+			return strings.Trim(strings.TrimPrefix(line, "ID="), "\"'")
+		}
+	}
+	return runtime.GOOS
+}
+
 func osPrettyName() string {
 	file, err := os.Open("/etc/os-release")
 	if err != nil {
@@ -369,7 +385,7 @@ func kernelRelease() string {
 
 func parseProbeTargets(raw string) ([]ProbeTarget, error) {
 	if strings.TrimSpace(raw) == "" {
-		raw = "CT=202.96.128.86:53;CU=123.125.81.6:53;CM=211.138.180.2:53"
+		raw = "CT=114.114.114.114:53;CU=123.125.81.6:53;CM=www.10086.cn:443"
 	}
 	parts := strings.Split(raw, ";")
 	if len(parts) > 16 {
