@@ -359,6 +359,17 @@
     return Number.isFinite(lastSeen) && now - lastSeen < 50000;
   }
 
+  function osLogo(osID) {
+    const id = String(osID || "").toLowerCase();
+    if (id === "ubuntu") {
+      return `<svg class="os-logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.1" fill="none" stroke="#E95420" stroke-width="2.8"/><circle cx="12" cy="3.9" r="2.1" fill="#E95420"/><circle cx="19.1" cy="16.1" r="2.1" fill="#E95420"/><circle cx="4.9" cy="16.1" r="2.1" fill="#E95420"/><path d="M12 6.8v2.1m4.2 6.1-1.8-1.1m-8.4 0-1.8 1.1" stroke="#E95420" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    }
+    if (id === "debian") {
+      return `<svg class="os-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.6 3.4c-3.9-.8-7.7 2.1-7.7 6.1 0 3.2 2.4 5.7 5.4 5.7 2.5 0 4.4-1.7 4.4-4.1 0-1.8-1.2-3.1-2.9-3.1-1.4 0-2.4.9-2.4 2.2 0 .8.5 1.4 1.3 1.4.6 0 1-.4 1-1" fill="none" stroke="#D70A53" stroke-width="2.1" stroke-linecap="round"/><path d="M7.2 15.2c1.6 2.1 4.2 3.4 7 3.1 2.7-.3 4.7-2.2 5-4.6" fill="none" stroke="#D70A53" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    }
+    return `<svg class="os-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.8 7.2 12 12l8.2-4.8M12 12v9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  }
+
   function renderNode(node, now) {
     const online = isOnline(node, now);
     const countryCode = String(node.country_code || "").toUpperCase();
@@ -402,7 +413,7 @@
         <div class="node-actions">
           <span class="node-badge green-badge">${esc(countryCode || "GLOBAL")}</span>
           <span class="node-badge">${esc(String(node.arch || "Linux"))}</span>
-          <span class="node-badge blue-badge">${esc(String(node.os || "Linux"))}</span>
+          <span class="node-badge blue-badge">${osLogo(node.os_id)}${esc(String(node.os || "Linux"))}</span>
           ${node.city ? `<span class="node-badge">${esc(node.city)}</span>` : ""}
           <span class="node-quick-actions"><button class="mini-action metadata-action" type="button" title="${esc(translate("manageNode"))}" aria-label="${esc(translate("manageNode"))}" data-edit-node="${esc(node.node_id)}">✎</button><button class="mini-action" type="button" title="${esc(translate("deleteNode"))}" aria-label="${esc(translate("deleteNode"))}" data-remove-node="${esc(node.node_id)}">×</button></span>
         </div>
@@ -673,7 +684,7 @@
         `POLARIS_NODE_ID="${envEscape(payload.node_id)}"`,
         `POLARIS_NODE_NAME="${envEscape(payload.node_name)}"`,
         `POLARIS_AGENT_TOKEN="${envEscape(payload.token)}"`,
-        `POLARIS_PROBE_TARGETS="CT=202.96.128.86:53;CU=123.125.81.6:53;CM=211.138.180.2:53"`,
+        `POLARIS_PROBE_TARGETS="CT=114.114.114.114:53;CU=123.125.81.6:53;CM=www.10086.cn:443"`,
       ];
       $("#agentConfigSnippet").value = configLines.join("\n");
       $("#nodeFormPane").hidden = true;
