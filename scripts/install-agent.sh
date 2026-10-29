@@ -23,7 +23,7 @@ POLARIS_NODE_ID=replace-with-node-id
 POLARIS_NODE_NAME=replace-with-node-name
 POLARIS_AGENT_TOKEN=replace-with-token
 # Optional: semicolon-separated NAME=host:port TCP targets.
-# POLARIS_PROBE_TARGETS="CT=202.96.128.86:53;CU=123.125.81.6:53;CM=211.138.180.2:53"
+# POLARIS_PROBE_TARGETS="CT=114.114.114.114:53;CU=123.125.81.6:53;CM=www.10086.cn:443"
 EOF_ENV
   chown root:polaris-agent /etc/polaris-agent.env
   chmod 0640 /etc/polaris-agent.env
