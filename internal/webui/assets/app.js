@@ -38,7 +38,7 @@
       demoData: "DEMO DATA", telecom: "China Telecom", unicom: "China Unicom", mobile: "China Mobile", manageNode: "Node details", nodeMetadataTitle: "Node details and allowances", nodeMetadataText: "Optional fields are hidden until set. Identity overrides are used when automatic detection is unavailable.",
       expiryDate: "Expiry date", priceUSD: "Price (USD)", monthlyQuota: "Monthly traffic quota (GiB)", totalQuota: "Total traffic quota (GiB)",
       identityOverrides: "Identity overrides", countryName: "Country / region", countryCode: "Country code", regionName: "Region / state", cityName: "City", ispName: "ISP", asnName: "ASN",
-      saveMetadata: "Save details", metadataSaved: "Node details saved.", expiryIn: "Expires in", expired: "Expired", days: "days", monthlyUsage: "Monthly traffic", totalUsage: "Tracked traffic", quotaNear: "Quota nearly reached", noQuota: "No quota configured",
+      saveMetadata: "Save details", metadataSaved: "Node details saved.", expiryIn: "Expires in", expired: "Expired", days: "days", monthlyUsage: "Monthly traffic", totalUsage: "Tracked traffic", quotaMode: "Quota mode", quotaTotal: "Inbound + outbound", quotaOutbound: "Outbound only", geoRetry: "Retry geo lookup", geoStatus: "Geo lookup status", geoLast: "Last lookup", geoNext: "Next retry", geoSuccess: "Success", geoFailed: "Failed", quotaNear: "Quota nearly reached", noQuota: "No quota configured",
     },
     zh: {
       privateConsole: "私有基础设施控制台", loginTitle: "你的服务器。<br>一屏尽在掌握。", loginSubtitle: "为轻量 VPS 打造的监控面板，让每台小机器的运行状态一目了然。",
@@ -65,7 +65,7 @@
       demoData: "演示数据", telecom: "中国电信", unicom: "中国联通", mobile: "中国移动", manageNode: "节点详情", nodeMetadataTitle: "节点详情与套餐信息", nodeMetadataText: "可选字段留空时不显示。自动识别不可用时，可以填写身份覆盖信息。",
       expiryDate: "到期日期", priceUSD: "价格（美元）", monthlyQuota: "月流量额度（GiB）", totalQuota: "总流量额度（GiB）",
       identityOverrides: "手动身份覆盖", countryName: "国家或地区", countryCode: "国家代码", regionName: "州 / 省 / 地区", cityName: "城市", ispName: "运营商 ISP", asnName: "ASN",
-      saveMetadata: "保存详情", metadataSaved: "节点详情已保存。", expiryIn: "剩余", expired: "已过期", days: "天", monthlyUsage: "本月流量", totalUsage: "累计统计流量", quotaNear: "流量额度即将用尽", noQuota: "未设置流量额度",
+      saveMetadata: "保存详情", metadataSaved: "节点详情已保存。", expiryIn: "剩余", expired: "已过期", days: "天", monthlyUsage: "本月流量", totalUsage: "累计统计流量", quotaMode: "额度计算模式", quotaTotal: "入站 + 出站", quotaOutbound: "仅出站", geoRetry: "重新查询地理信息", geoStatus: "地理信息查询状态", geoLast: "上次查询", geoNext: "下次重试", geoSuccess: "成功", geoFailed: "失败", quotaNear: "流量额度即将用尽", noQuota: "未设置流量额度",
     },
   };
 
@@ -216,6 +216,16 @@
     applyLanguage();
     try {
       state.config = await request("/api/public-config");
+      const copyright = $("#dashboardCopyright");
+      if (copyright) copyright.textContent = state.config.footer_copyright || "";
+      const footerLinks = $("#dashboardFooterLinks");
+      if (footerLinks) {
+        footerLinks.replaceChildren();
+        [["GitHub", state.config.footer_github], ["Telegram", state.config.footer_telegram]].forEach(([label, href]) => {
+          if (!href) return;
+          const link = document.createElement("a"); link.href = href; link.textContent = label; link.target = "_blank"; link.rel = "noopener noreferrer"; footerLinks.appendChild(link);
+        });
+      }
       loadTurnstile(state.config.turnstile_sitekey);
       try {
         await request("/api/me");
@@ -349,6 +359,9 @@
     nodesGrid.querySelectorAll("[data-remove-node]").forEach((button) => {
       button.addEventListener("click", () => removeNode(button.dataset.removeNode));
     });
+    nodesGrid.querySelectorAll("[data-geo-node]").forEach((button) => {
+      button.addEventListener("click", () => retryGeo(button.dataset.geoNode, button));
+    });
     nodesGrid.querySelectorAll("[data-edit-node]").forEach((button) => {
       button.addEventListener("click", () => openMetadataModal(button.dataset.editNode));
     });
@@ -357,17 +370,6 @@
   function isOnline(node, now = Date.now()) {
     const lastSeen = Date.parse(node.last_seen || "");
     return Number.isFinite(lastSeen) && now - lastSeen < 50000;
-  }
-
-  function osLogo(osID) {
-    const id = String(osID || "").toLowerCase();
-    if (id === "ubuntu") {
-      return `<svg class="os-logo" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.1" fill="none" stroke="#E95420" stroke-width="2.8"/><circle cx="12" cy="3.9" r="2.1" fill="#E95420"/><circle cx="19.1" cy="16.1" r="2.1" fill="#E95420"/><circle cx="4.9" cy="16.1" r="2.1" fill="#E95420"/><path d="M12 6.8v2.1m4.2 6.1-1.8-1.1m-8.4 0-1.8 1.1" stroke="#E95420" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-    }
-    if (id === "debian") {
-      return `<svg class="os-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.6 3.4c-3.9-.8-7.7 2.1-7.7 6.1 0 3.2 2.4 5.7 5.4 5.7 2.5 0 4.4-1.7 4.4-4.1 0-1.8-1.2-3.1-2.9-3.1-1.4 0-2.4.9-2.4 2.2 0 .8.5 1.4 1.3 1.4.6 0 1-.4 1-1" fill="none" stroke="#D70A53" stroke-width="2.1" stroke-linecap="round"/><path d="M7.2 15.2c1.6 2.1 4.2 3.4 7 3.1 2.7-.3 4.7-2.2 5-4.6" fill="none" stroke="#D70A53" stroke-width="1.8" stroke-linecap="round"/></svg>`;
-    }
-    return `<svg class="os-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.8 7.2 12 12l8.2-4.8M12 12v9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
   }
 
   function renderNode(node, now) {
@@ -413,9 +415,9 @@
         <div class="node-actions">
           <span class="node-badge green-badge">${esc(countryCode || "GLOBAL")}</span>
           <span class="node-badge">${esc(String(node.arch || "Linux"))}</span>
-          <span class="node-badge blue-badge">${osLogo(node.os_id)}${esc(String(node.os || "Linux"))}</span>
+          <span class="node-badge blue-badge">${systemLogo(node.os_id)}${esc(String(node.os || "Linux"))}</span>
           ${node.city ? `<span class="node-badge">${esc(node.city)}</span>` : ""}
-          <span class="node-quick-actions"><button class="mini-action metadata-action" type="button" title="${esc(translate("manageNode"))}" aria-label="${esc(translate("manageNode"))}" data-edit-node="${esc(node.node_id)}">✎</button><button class="mini-action" type="button" title="${esc(translate("deleteNode"))}" aria-label="${esc(translate("deleteNode"))}" data-remove-node="${esc(node.node_id)}">×</button></span>
+          <span class="node-quick-actions"><button class="mini-action metadata-action" type="button" title="${esc(translate("manageNode"))}" aria-label="${esc(translate("manageNode"))}" data-edit-node="${esc(node.node_id)}">✎</button><button class="mini-action" type="button" title="${esc(translate("geoRetry"))}" aria-label="${esc(translate("geoRetry"))}" data-geo-node="${esc(node.node_id)}">↻</button><button class="mini-action" type="button" title="${esc(translate("deleteNode"))}" aria-label="${esc(translate("deleteNode"))}" data-remove-node="${esc(node.node_id)}">×</button></span>
         </div>
       </div>
       <div class="node-body">
@@ -472,17 +474,26 @@
       items.push(`<div class="managed-chip ${daysLeft <= 7 ? "is-warning" : ""}"><span>${esc(translate("expiryDate"))}</span><strong>${esc(node.expiry_date)} · ${esc(label)}</strong></div>`);
     }
     if (node.price_usd !== undefined && node.price_usd !== null) items.push(`<div class="managed-chip"><span>${esc(translate("priceUSD"))}</span><strong>$${Number(node.price_usd).toFixed(2)}</strong></div>`);
+    const mode = node.quota_mode === "outbound_only" ? "outbound_only" : "total";
+    const monthlyIn = Number(node.monthly_rx_usage_bytes) || 0;
+    const monthlyOut = Number(node.monthly_tx_usage_bytes) || 0;
+    const totalIn = Number(node.total_rx_usage_bytes) || 0;
+    const totalOut = Number(node.total_tx_usage_bytes) || 0;
+    const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
+    const totalCounted = mode === "outbound_only" ? totalOut : totalIn + totalOut;
     const monthlyQuota = Number(node.monthly_quota_bytes) || 0;
-    if (monthlyQuota > 0) items.push(quotaChip(translate("monthlyUsage"), Number(node.monthly_usage_bytes) || 0, monthlyQuota));
+    if (monthlyQuota > 0) items.push(quotaChip(translate("monthlyUsage"), monthlyCounted, monthlyQuota, monthlyIn, monthlyOut));
     const totalQuota = Number(node.total_quota_bytes) || 0;
-    if (totalQuota > 0) items.push(quotaChip(translate("totalUsage"), Number(node.total_usage_bytes) || 0, totalQuota));
+    if (totalQuota > 0) items.push(quotaChip(translate("totalUsage"), totalCounted, totalQuota, totalIn, totalOut));
+    const geoStatus = node.geo_success ? translate("geoSuccess") : translate("geoFailed");
+    items.push(`<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(geoStatus)}</span><small>${esc(translate("geoLast"))}: ${esc(node.geo_attempted_at ? new Date(node.geo_attempted_at).toLocaleString() : "—")}</small><small>${esc(translate("geoNext"))}: ${esc(node.geo_next_retry_at ? new Date(node.geo_next_retry_at).toLocaleString() : "—")}</small></div>`);
     if (!items.length) return "";
     return `<div class="managed-section">${items.join("")}</div>`;
   }
 
-  function quotaChip(label, used, quota) {
+  function quotaChip(label, used, quota, inbound = 0, outbound = 0) {
     const ratio = quota > 0 ? Math.min(100, used / quota * 100) : 0;
-    return `<div class="managed-chip ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(label)}</span><strong>${fmtBytes(used)} / ${fmtBytes(quota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
+    return `<div class="managed-chip ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(label)}</span><small>${esc(translate("ingress"))} ${fmtBytes(inbound)} / ${esc(translate("egress"))} ${fmtBytes(outbound)}</small><strong>${fmtBytes(used)} / ${fmtBytes(quota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
   }
 
   function sparklineScaled(values, stroke) {
@@ -580,6 +591,7 @@
     $("#metaExpiryDate").value = node.expiry_date || "";
     $("#metaPriceUSD").value = node.price_usd == null ? "" : String(node.price_usd);
     $("#metaMonthlyQuota").value = node.monthly_quota_bytes ? (Number(node.monthly_quota_bytes) / (1024 ** 3)).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") : "";
+    $("#metaQuotaMode").value = node.quota_mode || "total";
     $("#metaTotalQuota").value = node.total_quota_bytes ? (Number(node.total_quota_bytes) / (1024 ** 3)).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") : "";
     $("#metaIPv4").value = node.public_ipv4_override || "";
     $("#metaIPv6").value = node.public_ipv6_override || "";
@@ -610,6 +622,7 @@
       price_usd: priceText === "" ? null : Number(priceText),
       monthly_quota_bytes: toQuotaBytes($("#metaMonthlyQuota").value.trim()),
       total_quota_bytes: toQuotaBytes($("#metaTotalQuota").value.trim()),
+      quota_mode: $("#metaQuotaMode").value,
       public_ipv4_override: $("#metaIPv4").value.trim(),
       public_ipv6_override: $("#metaIPv6").value.trim(),
       country_override: $("#metaCountry").value.trim(),
@@ -638,6 +651,23 @@
     } finally {
       setButtonBusy(button, false, "saveMetadata");
     }
+  }
+
+  async function retryGeo(nodeID, button) {
+    button.disabled = true;
+    try {
+      const result = await request(`/api/nodes/${encodeURIComponent(nodeID)}/geo/retry`, { method: "POST", mutation: true, body: "{}" });
+      await loadNodes();
+      showToast(result.success ? translate("geoSuccess") : translate("geoFailed"));
+    } catch (error) { showToast(error.message || translate("requestFailed")); }
+    finally { button.disabled = false; }
+  }
+
+  function systemLogo(osID) {
+    const id = String(osID || "").toLowerCase();
+    if (id === "ubuntu") return '<img class="system-logo" src="/assets/os-ubuntu.png" alt="" aria-hidden="true">';
+    if (id === "debian") return '<img class="system-logo" src="/assets/os-debian.png" alt="" aria-hidden="true">';
+    return '<svg class="system-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 14 8l6 2-6 2-2 8-2-8-6-2 6-2z"/></svg>';
   }
 
   function openNodeModal() {

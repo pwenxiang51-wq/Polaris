@@ -165,7 +165,7 @@ func collect(ctx context.Context, cfg AgentConfig) (shared.Report, error) {
 	kernel := kernelRelease()
 	return shared.Report{
 		NodeID: cfg.NodeID, Name: cfg.NodeName, Hostname: hostname,
-		OS: osName, OSID: osID(), Kernel: kernel, Arch: runtime.GOARCH,
+		OS: osName, OSID: osReleaseID(), Kernel: kernel, Arch: runtime.GOARCH,
 		PublicIPv4: publicIPv4, PublicIPv6: publicIPv6,
 		CPUPercent: cpuPercent, CPUCount: runtime.NumCPU(),
 		MemTotalBytes: memTotal, MemUsedBytes: maxUint64(0, memTotal-memAvailable),
@@ -339,7 +339,7 @@ func networkCounters() (uint64, uint64) {
 	return rxTotal, txTotal
 }
 
-func osID() string {
+func osReleaseID() string {
 	file, err := os.Open("/etc/os-release")
 	if err != nil {
 		return runtime.GOOS

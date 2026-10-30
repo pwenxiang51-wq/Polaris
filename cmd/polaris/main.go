@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/rand"
@@ -18,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -46,15 +48,22 @@ type Config struct {
 	ExternalURL       string
 	TrustProxyHeaders bool
 	EnableGeoLookup   bool
+	FooterCopyright   string
+	FooterGitHub      string
+	FooterTelegram    string
+	TelegramBotToken  string
+	TelegramChatID    string
 }
 
 type App struct {
-	cfg        Config
-	store      *store.Store
-	limiter    *loginLimiter
-	turnstile  *http.Client
-	sessionsMu sync.Mutex
-	sessions   map[string]int64
+	cfg         Config
+	store       *store.Store
+	limiter     *loginLimiter
+	turnstile   *http.Client
+	sessionsMu  sync.Mutex
+	sessions    map[string]int64
+	notifyMu    sync.Mutex
+	notifyState map[string]time.Time
 }
 
 type loginLimiter struct {
@@ -87,6 +96,7 @@ type nodeMetadataRequest struct {
 	PriceUSD            *float64 `json:"price_usd"`
 	MonthlyQuotaBytes   uint64   `json:"monthly_quota_bytes"`
 	TotalQuotaBytes     uint64   `json:"total_quota_bytes"`
+	QuotaMode           string   `json:"quota_mode"`
 	PublicIPv4Override  string   `json:"public_ipv4_override"`
 	PublicIPv6Override  string   `json:"public_ipv6_override"`
 	CountryOverride     string   `json:"country_override"`
@@ -141,6 +151,11 @@ func loadConfig() (Config, error) {
 		ExternalURL:       strings.TrimRight(strings.TrimSpace(os.Getenv("POLARIS_EXTERNAL_URL")), "/"),
 		TrustProxyHeaders: strings.EqualFold(strings.TrimSpace(os.Getenv("POLARIS_TRUST_PROXY_HEADERS")), "true"),
 		EnableGeoLookup:   !strings.EqualFold(strings.TrimSpace(os.Getenv("POLARIS_ENABLE_GEO_LOOKUP")), "false"),
+		FooterCopyright:   strings.TrimSpace(os.Getenv("POLARIS_FOOTER_COPYRIGHT")),
+		FooterGitHub:      strings.TrimSpace(os.Getenv("POLARIS_FOOTER_GITHUB")),
+		FooterTelegram:    strings.TrimSpace(os.Getenv("POLARIS_FOOTER_TELEGRAM")),
+		TelegramBotToken:  optionalSecretEnv("POLARIS_TELEGRAM_BOT_TOKEN"),
+		TelegramChatID:    optionalSecretEnv("POLARIS_TELEGRAM_CHAT_ID"),
 	}
 	if cfg.AdminUser == "" || len(cfg.AdminUser) > 64 {
 		return Config{}, errors.New("POLARIS_ADMIN_USER must contain 1-64 characters")
@@ -189,6 +204,11 @@ func secretEnv(key string) (string, error) {
 	return strings.TrimSpace(os.Getenv(key)), nil
 }
 
+func optionalSecretEnv(key string) string {
+	value, _ := secretEnv(key)
+	return value
+}
+
 func main() {
 	cfg, err := loadConfig()
 	if err != nil {
@@ -200,12 +220,14 @@ func main() {
 	}
 	app := &App{
 		cfg: cfg, store: st,
-		limiter:   &loginLimiter{entries: make(map[string]loginBucket)},
-		turnstile: &http.Client{Timeout: 5 * time.Second},
+		limiter:     &loginLimiter{entries: make(map[string]loginBucket)},
+		turnstile:   &http.Client{Timeout: 5 * time.Second},
+		notifyState: loadNotificationState(filepath.Join(cfg.DataDir, "notification-state.json")),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", app.health)
 	mux.HandleFunc("GET /api/public-config", app.publicConfig)
+	mux.HandleFunc("GET /manifest.json", app.manifest)
 	mux.HandleFunc("POST /api/login", app.login)
 	mux.HandleFunc("POST /api/logout", app.logout)
 	mux.HandleFunc("GET /api/me", app.me)
@@ -213,6 +235,7 @@ func main() {
 	mux.HandleFunc("GET /api/nodes/{id}/history", app.nodeHistory)
 	mux.HandleFunc("POST /api/nodes/token", app.createNodeToken)
 	mux.HandleFunc("PATCH /api/nodes/{id}/metadata", app.updateNodeMetadata)
+	mux.HandleFunc("POST /api/nodes/{id}/geo/retry", app.retryNodeGeo)
 	mux.HandleFunc("DELETE /api/nodes/{id}", app.deleteNode)
 	mux.HandleFunc("POST /api/v1/report", app.receiveReport)
 	mux.HandleFunc("GET /assets/", app.serveAsset)
@@ -286,7 +309,20 @@ func (a *App) serveAsset(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 	} else if strings.HasSuffix(name, ".svg") {
 		w.Header().Set("Content-Type", "image/svg+xml")
+	} else if strings.HasSuffix(name, ".png") {
+		w.Header().Set("Content-Type", "image/png")
 	}
+	_, _ = io.Copy(w, file)
+}
+
+func (a *App) manifest(w http.ResponseWriter, r *http.Request) {
+	file, err := webui.Files().Open("assets/manifest.json")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+	w.Header().Set("Content-Type", "application/manifest+json; charset=utf-8")
 	_, _ = io.Copy(w, file)
 }
 
@@ -299,6 +335,9 @@ func (a *App) publicConfig(w http.ResponseWriter, r *http.Request) {
 		"turnstile_sitekey": a.cfg.TurnstileSiteKey,
 		"turnstile_enabled": a.cfg.TurnstileSiteKey != "",
 		"external_url":      a.cfg.ExternalURL,
+		"footer_copyright":  a.cfg.FooterCopyright,
+		"footer_github":     a.cfg.FooterGitHub,
+		"footer_telegram":   a.cfg.FooterTelegram,
 	})
 }
 
@@ -358,12 +397,131 @@ func (a *App) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"authenticated": true, "username": a.cfg.AdminUser})
 }
 
+type notificationMessage struct {
+	ChatID                string `json:"chat_id"`
+	Text                  string `json:"text"`
+	DisableWebPagePreview bool   `json:"disable_web_page_preview"`
+}
+
+func loadNotificationState(path string) map[string]time.Time {
+	state := make(map[string]time.Time)
+	data, err := os.ReadFile(path)
+	if err == nil {
+		_ = json.Unmarshal(data, &state)
+	}
+	return state
+}
+
+func (a *App) checkNotifications(nodes []shared.Report) {
+	a.notifyMu.Lock()
+	defer a.notifyMu.Unlock()
+	if a.notifyState == nil {
+		a.notifyState = make(map[string]time.Time)
+	}
+	if a.cfg.TelegramBotToken == "" || a.cfg.TelegramChatID == "" {
+		return
+	}
+	now := time.Now().UTC()
+	for _, node := range nodes {
+		name := node.Name
+		if name == "" {
+			name = node.NodeID
+		}
+		lastSeen := node.LastSeen
+		if !lastSeen.IsZero() && now.Sub(lastSeen) > 5*time.Minute {
+			key := node.NodeID + ":offline"
+			if _, sent := a.notifyState[key]; !sent {
+				a.sendTelegram("Node offline: " + name + " (" + node.NodeID + "). Last report: " + lastSeen.Format(time.RFC3339))
+				a.notifyState[key] = now
+			}
+		} else if _, sent := a.notifyState[node.NodeID+":offline"]; sent {
+			a.sendTelegram("Node recovered: " + name + " (" + node.NodeID + ").")
+			delete(a.notifyState, node.NodeID+":offline")
+		}
+		mode := node.QuotaMode
+		if mode == "outbound_only" {
+		}
+		monthly := node.MonthlyUsageBytes
+		if mode == "outbound_only" {
+			monthly = node.MonthlyTXUsageBytes
+		}
+		quota := node.MonthlyQuotaBytes
+		if quota > 0 {
+			ratio := float64(monthly) / float64(quota) * 100
+			for _, threshold := range []int{80, 90, 100} {
+				if ratio >= float64(threshold) {
+					key := node.NodeID + ":quota:" + node.UsageMonth + ":" + strconv.Itoa(threshold)
+					if _, ok := a.notifyState[key]; !ok {
+						a.sendTelegram(fmt.Sprintf("Monthly quota %d%%: %s (%s), %s / %s", threshold, name, node.NodeID, formatBytes(monthly), formatBytes(quota)))
+						a.notifyState[key] = now
+					}
+				}
+			}
+		}
+		if node.ExpiryDate != "" {
+			if expiry, err := time.Parse("2006-01-02", node.ExpiryDate); err == nil {
+				days := int(math.Ceil(expiry.Sub(now).Hours() / 24))
+				for _, threshold := range []int{7, 3, 1} {
+					if days == threshold {
+						key := node.NodeID + ":expiry:" + node.ExpiryDate + ":" + strconv.Itoa(threshold)
+						if _, ok := a.notifyState[key]; !ok {
+							a.sendTelegram(fmt.Sprintf("Node expiry in %d day(s): %s (%s), date %s", threshold, name, node.NodeID, node.ExpiryDate))
+							a.notifyState[key] = now
+						}
+					}
+				}
+			}
+		}
+	}
+	data, err := json.Marshal(a.notifyState)
+	if err == nil {
+		_ = os.WriteFile(filepath.Join(a.cfg.DataDir, "notification-state.json"), data, 0600)
+	}
+}
+
+func (a *App) sendTelegram(message string) {
+	payload, _ := json.Marshal(notificationMessage{ChatID: a.cfg.TelegramChatID, Text: message, DisableWebPagePreview: true})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.telegram.org/bot"+a.cfg.TelegramBotToken+"/sendMessage", bytes.NewReader(payload))
+	if err != nil {
+		log.Printf("telegram notification request could not be created")
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("telegram notification failed category=network")
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Printf("telegram notification failed category=http_status status=%d", resp.StatusCode)
+	}
+}
+
+func formatBytes(value uint64) string {
+	const unit = 1024
+	if value < unit {
+		return fmt.Sprintf("%d B", value)
+	}
+	div, exp := uint64(unit), 0
+	for n := value / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %ciB", float64(value)/float64(div), "KMGTPE"[exp])
+}
+
 func (a *App) listNodes(w http.ResponseWriter, r *http.Request) {
 	if _, ok := a.authenticate(r); !ok {
 		writeError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"nodes": a.store.Nodes()})
+	nodes := a.store.Nodes()
+	a.checkNotifications(nodes)
+	writeJSON(w, http.StatusOK, map[string]any{"nodes": nodes})
 }
 
 func (a *App) nodeHistory(w http.ResponseWriter, r *http.Request) {
@@ -409,6 +567,13 @@ func (a *App) updateNodeMetadata(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Price must be between 0 and 1000000 USD")
 		return
 	}
+	if req.QuotaMode != "" && req.QuotaMode != "total" && req.QuotaMode != "outbound_only" {
+		writeError(w, http.StatusBadRequest, "Invalid quota mode")
+		return
+	}
+	if req.QuotaMode == "" {
+		req.QuotaMode = "total"
+	}
 	if req.MonthlyQuotaBytes > 1<<60 || req.TotalQuotaBytes > 1<<60 {
 		writeError(w, http.StatusBadRequest, "Quota value is too large")
 		return
@@ -452,7 +617,7 @@ func (a *App) updateNodeMetadata(w http.ResponseWriter, r *http.Request) {
 	req.RegionOverride, req.CityOverride = strings.TrimSpace(req.RegionOverride), strings.TrimSpace(req.CityOverride)
 	req.ISPOverride, req.ASNOverride = strings.TrimSpace(req.ISPOverride), strings.TrimSpace(req.ASNOverride)
 	if err := a.store.UpdateMetadata(nodeID, store.MetadataUpdate{
-		ExpiryDate: req.ExpiryDate, PriceUSD: req.PriceUSD, MonthlyQuotaBytes: req.MonthlyQuotaBytes, TotalQuotaBytes: req.TotalQuotaBytes,
+		ExpiryDate: req.ExpiryDate, PriceUSD: req.PriceUSD, MonthlyQuotaBytes: req.MonthlyQuotaBytes, TotalQuotaBytes: req.TotalQuotaBytes, QuotaMode: req.QuotaMode,
 		PublicIPv4Override: req.PublicIPv4Override, PublicIPv6Override: req.PublicIPv6Override, CountryOverride: req.CountryOverride,
 		CountryCodeOverride: req.CountryCodeOverride, RegionOverride: req.RegionOverride, CityOverride: req.CityOverride,
 		ISPOverride: req.ISPOverride, ASNOverride: req.ASNOverride,
@@ -461,6 +626,46 @@ func (a *App) updateNodeMetadata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (a *App) retryNodeGeo(w http.ResponseWriter, r *http.Request) {
+	if !a.requireAdminMutation(w, r) {
+		return
+	}
+	nodeID := r.PathValue("id")
+	if !nodeIDPattern.MatchString(nodeID) {
+		writeError(w, http.StatusBadRequest, "Invalid node ID")
+		return
+	}
+	ip, ok := a.store.MetadataIP(nodeID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "Node not found")
+		return
+	}
+	if ip == "" {
+		writeError(w, http.StatusBadRequest, "Node has no public IP")
+		return
+	}
+	metadata, found := a.lookupIPMetadata(r.Context(), ip)
+	cached := shared.IPMetadata{AttemptedAt: time.Now().UTC(), Success: found}
+	if found {
+		cached.Country, cached.CountryCode = metadata.Country, metadata.CountryCode
+		cached.Region, cached.City = metadata.Region, metadata.City
+		cached.ISP, cached.ASN = metadata.Connection.ISP, metadata.Connection.ASN
+	} else {
+		log.Printf("geo lookup failed ip=%s at=%s category=provider_or_network", ip, cached.AttemptedAt.Format(time.RFC3339))
+	}
+	if err := a.store.SaveIPMetadata(ip, cached); err != nil {
+		writeError(w, http.StatusInternalServerError, "Could not save geo lookup result")
+		return
+	}
+	if found {
+		if err := a.store.SetGeoMetadata(nodeID, ip, cached.Country, cached.CountryCode, cached.Region, cached.City, cached.ISP, cached.ASN); err != nil {
+			writeError(w, http.StatusInternalServerError, "Could not apply geo metadata")
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"success": found, "country": cached.Country, "country_code": cached.CountryCode, "region": cached.Region, "city": cached.City, "isp": cached.ISP, "asn": cached.ASN, "attempted_at": cached.AttemptedAt, "next_retry_at": cached.NextRetryAt})
 }
 
 func (a *App) createNodeToken(w http.ResponseWriter, r *http.Request) {
@@ -552,6 +757,9 @@ func (a *App) receiveReport(w http.ResponseWriter, r *http.Request) {
 					cached.Country, cached.CountryCode = metadata.Country, metadata.CountryCode
 					cached.Region, cached.City = metadata.Region, metadata.City
 					cached.ISP, cached.ASN = metadata.Connection.ISP, metadata.Connection.ASN
+				}
+				if !found {
+					log.Printf("geo lookup failed ip=%s at=%s category=provider_or_network", ip, cached.AttemptedAt.Format(time.RFC3339))
 				}
 				if err := a.store.SaveIPMetadata(ip, cached); err != nil {
 					log.Printf("could not persist IP metadata cache")

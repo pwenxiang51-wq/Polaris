@@ -25,7 +25,7 @@ type Report struct {
 	Name           string         `json:"name"`
 	Hostname       string         `json:"hostname"`
 	OS             string         `json:"os"`
-	OSID           string         `json:"os_id"`
+	OSID           string         `json:"os_id,omitempty"`
 	Kernel         string         `json:"kernel"`
 	Arch           string         `json:"arch"`
 	Country        string         `json:"country"`
@@ -60,14 +60,22 @@ type Report struct {
 	History        []HistoryPoint `json:"history,omitempty"`
 	DemoData       bool           `json:"demo_data,omitempty"`
 
-	MetadataLookupIP  string   `json:"metadata_lookup_ip,omitempty"`
-	ExpiryDate        string   `json:"expiry_date,omitempty"`
-	PriceUSD          *float64 `json:"price_usd,omitempty"`
-	MonthlyQuotaBytes uint64   `json:"monthly_quota_bytes,omitempty"`
-	TotalQuotaBytes   uint64   `json:"total_quota_bytes,omitempty"`
-	MonthlyUsageBytes uint64   `json:"monthly_usage_bytes,omitempty"`
-	TotalUsageBytes   uint64   `json:"total_usage_bytes,omitempty"`
-	UsageMonth        string   `json:"usage_month,omitempty"`
+	MetadataLookupIP    string    `json:"metadata_lookup_ip,omitempty"`
+	GeoAttemptedAt      time.Time `json:"geo_attempted_at,omitempty"`
+	GeoSuccess          bool      `json:"geo_success"`
+	GeoNextRetryAt      time.Time `json:"geo_next_retry_at,omitempty"`
+	ExpiryDate          string    `json:"expiry_date,omitempty"`
+	PriceUSD            *float64  `json:"price_usd,omitempty"`
+	MonthlyQuotaBytes   uint64    `json:"monthly_quota_bytes,omitempty"`
+	TotalQuotaBytes     uint64    `json:"total_quota_bytes,omitempty"`
+	MonthlyUsageBytes   uint64    `json:"monthly_usage_bytes,omitempty"`
+	TotalUsageBytes     uint64    `json:"total_usage_bytes,omitempty"`
+	MonthlyRXUsageBytes uint64    `json:"monthly_rx_usage_bytes,omitempty"`
+	MonthlyTXUsageBytes uint64    `json:"monthly_tx_usage_bytes,omitempty"`
+	TotalRXUsageBytes   uint64    `json:"total_rx_usage_bytes,omitempty"`
+	TotalTXUsageBytes   uint64    `json:"total_tx_usage_bytes,omitempty"`
+	QuotaMode           string    `json:"quota_mode,omitempty"`
+	UsageMonth          string    `json:"usage_month,omitempty"`
 
 	PublicIPv4Override  string `json:"public_ipv4_override,omitempty"`
 	PublicIPv6Override  string `json:"public_ipv6_override,omitempty"`
@@ -80,12 +88,15 @@ type Report struct {
 }
 
 type IPMetadata struct {
-	AttemptedAt time.Time `json:"attempted_at"`
-	Success     bool      `json:"success"`
-	Country     string    `json:"country,omitempty"`
-	CountryCode string    `json:"country_code,omitempty"`
-	Region      string    `json:"region,omitempty"`
-	City        string    `json:"city,omitempty"`
-	ISP         string    `json:"isp,omitempty"`
-	ASN         string    `json:"asn,omitempty"`
+	AttemptedAt     time.Time `json:"attempted_at"`
+	Success         bool      `json:"success"`
+	FailureCount    int       `json:"failure_count,omitempty"`
+	NextRetryAt     time.Time `json:"next_retry_at,omitempty"`
+	FailureCategory string    `json:"failure_category,omitempty"`
+	Country         string    `json:"country,omitempty"`
+	CountryCode     string    `json:"country_code,omitempty"`
+	Region          string    `json:"region,omitempty"`
+	City            string    `json:"city,omitempty"`
+	ISP             string    `json:"isp,omitempty"`
+	ASN             string    `json:"asn,omitempty"`
 }

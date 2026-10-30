@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0f0d">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <style>html{background:#0b0f0d}</style>
   <meta name="referrer" content="no-referrer">
   <title>Polaris · Server Monitor</title>
   <link rel="icon" type="image/svg+xml" href="/assets/polaris.svg">
@@ -66,7 +73,7 @@
       <div class="header-center"><span class="live-chip"><span class="pulse-dot"></span><span data-i18n="liveMonitor">LIVE MONITOR</span></span><span class="header-divider"></span><span class="header-subtitle" data-i18n="privateInfrastructure">Private infrastructure</span></div>
       <div class="top-actions">
         <button class="icon-button" id="dashLanguageButton" type="button"><span class="button-glyph">文</span><span id="dashLanguageLabel">中文</span></button>
-        <button class="icon-button theme-button" id="dashThemeButton" type="button"><span id="dashThemeGlyph">☼</span><span id="dashThemeLabel">Light mode</span></button>
+        <button class="icon-button theme-button" id="dashThemeButton" type="button"><span id="dashThemeGlyph">☼</span><span id="dashThemeLabel" class="theme-label">Light mode</span></button>
         <button class="icon-button logout-button" id="logoutButton" type="button"><span class="logout-glyph">↗</span><span data-i18n="signOut">Sign out</span></button>
       </div>
     </header>
@@ -85,7 +92,7 @@
       <div id="globalMessage" class="global-message" role="status" hidden></div>
       <section id="nodesGrid" class="nodes-grid" aria-live="polite"></section>
       <section id="emptyState" class="empty-state" hidden><div class="empty-orbit"><span></span><span></span><span></span><b>✦</b></div><h2 data-i18n="noNodesTitle">Your orbit is quiet.</h2><p data-i18n="noNodesText">Create a probe token, install the lightweight agent on a Linux host, and your first node will appear here.</p><button class="primary-button" id="emptyAddNodeButton" type="button"><span class="plus-glyph">＋</span><span data-i18n="addFirstProbe">Add your first probe</span></button></section>
-      <footer class="dashboard-footer"><span><span class="footer-logo">✦</span> POLARIS <span class="footer-separator">/</span> <span data-i18n="footerMonitor">SERVER MONITOR</span></span><span><span class="footer-status-dot"></span><span data-i18n="footerLocal">Metrics collected by your own probes</span></span><span id="lastRefreshLabel">—</span></footer>
+      <footer class="dashboard-footer"><span><span class="footer-logo">✦</span> POLARIS <span class="footer-separator">/</span> <span data-i18n="footerMonitor">SERVER MONITOR</span></span><span><span class="footer-status-dot"></span><span data-i18n="footerLocal">Metrics collected by your own probes</span></span><span id="lastRefreshLabel">—</span><span class="footer-links"><span id="dashboardCopyright"></span><span id="dashboardFooterLinks"></span></span></footer>
     </main>
   </div>
 
@@ -108,6 +115,7 @@
           <div><label for="metaPriceUSD" data-i18n="priceUSD">Price (USD)</label><input id="metaPriceUSD" type="number" min="0" max="1000000" step="0.01" inputmode="decimal"></div>
           <div><label for="metaMonthlyQuota" data-i18n="monthlyQuota">Monthly traffic quota (GiB)</label><input id="metaMonthlyQuota" type="number" min="0" step="0.001" inputmode="decimal"></div>
           <div><label for="metaTotalQuota" data-i18n="totalQuota">Total traffic quota (GiB)</label><input id="metaTotalQuota" type="number" min="0" step="0.001" inputmode="decimal"></div>
+          <div><label for="metaQuotaMode" data-i18n="quotaMode">Quota usage mode</label><select id="metaQuotaMode"><option value="total" data-i18n="quotaTotal">Inbound + outbound</option><option value="outbound_only" data-i18n="quotaOutbound">Outbound only</option></select></div>
         </div>
         <h3 class="metadata-subheading" data-i18n="identityOverrides">Identity overrides</h3>
         <div class="metadata-form-grid">

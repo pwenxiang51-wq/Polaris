@@ -44,6 +44,7 @@ type MetadataUpdate struct {
 	PriceUSD            *float64
 	MonthlyQuotaBytes   uint64
 	TotalQuotaBytes     uint64
+	QuotaMode           string
 	PublicIPv4Override  string
 	PublicIPv6Override  string
 	CountryOverride     string
@@ -586,19 +587,33 @@ func (s *Store) Update(report shared.Report, nodeName string) error {
 		report.UsageMonth = month
 		if previous.UsageMonth == month {
 			report.MonthlyUsageBytes = previous.MonthlyUsageBytes
+			report.MonthlyRXUsageBytes = previous.MonthlyRXUsageBytes
+			report.MonthlyTXUsageBytes = previous.MonthlyTXUsageBytes
 		} else {
 			report.MonthlyUsageBytes = 0
+			report.MonthlyRXUsageBytes = 0
+			report.MonthlyTXUsageBytes = 0
 		}
 		if !previous.LastSeen.IsZero() {
-			delta := counterDelta(report.RXBytes, previous.RXBytes) + counterDelta(report.TXBytes, previous.TXBytes)
-			report.TotalUsageBytes = saturatingAdd(previous.TotalUsageBytes, delta)
-			report.MonthlyUsageBytes = saturatingAdd(report.MonthlyUsageBytes, delta)
+			rxDelta := counterDelta(report.RXBytes, previous.RXBytes)
+			txDelta := counterDelta(report.TXBytes, previous.TXBytes)
+			report.TotalRXUsageBytes = saturatingAdd(previous.TotalRXUsageBytes, rxDelta)
+			report.TotalTXUsageBytes = saturatingAdd(previous.TotalTXUsageBytes, txDelta)
+			report.MonthlyRXUsageBytes = saturatingAdd(report.MonthlyRXUsageBytes, rxDelta)
+			report.MonthlyTXUsageBytes = saturatingAdd(report.MonthlyTXUsageBytes, txDelta)
+			legacyTotal := previous.TotalUsageBytes - minUint64(previous.TotalUsageBytes, saturatingAdd(previous.TotalRXUsageBytes, previous.TotalTXUsageBytes))
+			legacyMonth := previous.MonthlyUsageBytes - minUint64(previous.MonthlyUsageBytes, saturatingAdd(previous.MonthlyRXUsageBytes, previous.MonthlyTXUsageBytes))
+			report.TotalUsageBytes = saturatingAdd(legacyTotal, saturatingAdd(report.TotalRXUsageBytes, report.TotalTXUsageBytes))
+			report.MonthlyUsageBytes = saturatingAdd(legacyMonth, saturatingAdd(report.MonthlyRXUsageBytes, report.MonthlyTXUsageBytes))
 		} else {
 			report.TotalUsageBytes = previous.TotalUsageBytes
+			report.TotalRXUsageBytes = previous.TotalRXUsageBytes
+			report.TotalTXUsageBytes = previous.TotalTXUsageBytes
 		}
 	} else {
 		report.FirstSeen = now
 		report.UsageMonth = now.Format("2006-01")
+		report.QuotaMode = "total"
 	}
 	if report.FirstSeen.IsZero() {
 		report.FirstSeen = now
@@ -623,6 +638,7 @@ func preserveManaged(report *shared.Report, previous shared.Report) {
 	report.PriceUSD = previous.PriceUSD
 	report.MonthlyQuotaBytes = previous.MonthlyQuotaBytes
 	report.TotalQuotaBytes = previous.TotalQuotaBytes
+	report.QuotaMode = previous.QuotaMode
 	report.PublicIPv4Override = previous.PublicIPv4Override
 	report.PublicIPv6Override = previous.PublicIPv6Override
 	report.CountryOverride = previous.CountryOverride
@@ -638,6 +654,13 @@ func counterDelta(current, previous uint64) uint64 {
 		return current - previous
 	}
 	return current
+}
+
+func minUint64(a, b uint64) uint64 {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func saturatingAdd(a, b uint64) uint64 {
@@ -788,7 +811,10 @@ func (s *Store) ClaimIPMetadataLookup(ip string) bool {
 	now := time.Now().UTC()
 	previous, exists := s.ipMetadata[ip]
 	if exists {
-		if previous.Success || (!previous.AttemptedAt.IsZero() && now.Sub(previous.AttemptedAt) < failedGeoRetryAfter) {
+		if previous.Success || (!previous.NextRetryAt.IsZero() && now.Before(previous.NextRetryAt)) {
+			return false
+		}
+		if previous.NextRetryAt.IsZero() && !previous.AttemptedAt.IsZero() && now.Sub(previous.AttemptedAt) < failedGeoRetryAfter {
 			return false
 		}
 	} else if len(s.ipMetadata) >= 2048 {
@@ -818,6 +844,20 @@ func (s *Store) ClaimIPMetadataLookup(ip string) bool {
 func (s *Store) SaveIPMetadata(ip string, metadata shared.IPMetadata) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	previous := s.ipMetadata[ip]
+	if !metadata.Success {
+		metadata.FailureCount = previous.FailureCount + 1
+		delay := time.Hour
+		if metadata.FailureCount == 2 {
+			delay = 6 * time.Hour
+		} else if metadata.FailureCount >= 3 {
+			delay = 24 * time.Hour
+		}
+		metadata.NextRetryAt = metadata.AttemptedAt.Add(delay)
+	} else {
+		metadata.FailureCount = 0
+		metadata.NextRetryAt = time.Time{}
+	}
 	if _, exists := s.ipMetadata[ip]; !exists {
 		metadata.AttemptedAt = time.Now().UTC()
 	}
@@ -825,7 +865,18 @@ func (s *Store) SaveIPMetadata(ip string, metadata shared.IPMetadata) error {
 		metadata.AttemptedAt = time.Now().UTC()
 	}
 	s.ipMetadata[ip] = metadata
-	return s.saveLocked("ip-metadata.json", s.ipMetadata)
+	for nodeID, node := range s.nodes {
+		if identityIP(node) == ip {
+			node.GeoAttemptedAt = metadata.AttemptedAt
+			node.GeoSuccess = metadata.Success
+			node.GeoNextRetryAt = metadata.NextRetryAt
+			s.nodes[nodeID] = node
+		}
+	}
+	if err := s.saveLocked("ip-metadata.json", s.ipMetadata); err != nil {
+		return err
+	}
+	return s.saveNodesLocked()
 }
 
 func (s *Store) UpdateMetadata(nodeID string, update MetadataUpdate) error {
@@ -838,6 +889,7 @@ func (s *Store) UpdateMetadata(nodeID string, update MetadataUpdate) error {
 	node.ExpiryDate = update.ExpiryDate
 	node.PriceUSD = update.PriceUSD
 	node.MonthlyQuotaBytes, node.TotalQuotaBytes = update.MonthlyQuotaBytes, update.TotalQuotaBytes
+	node.QuotaMode = update.QuotaMode
 	node.PublicIPv4Override, node.PublicIPv6Override = update.PublicIPv4Override, update.PublicIPv6Override
 	node.CountryOverride, node.CountryCodeOverride = update.CountryOverride, update.CountryCodeOverride
 	node.RegionOverride, node.CityOverride = update.RegionOverride, update.CityOverride
