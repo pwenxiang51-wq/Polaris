@@ -21,6 +21,8 @@
   <link rel="apple-touch-startup-image" href="/assets/apple-splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <link rel="apple-touch-startup-image" href="/assets/apple-splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <link rel="apple-touch-startup-image" href="/assets/apple-splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/apple-splash-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/assets/apple-splash-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
   <style>html{background:#0b0f0d}</style>
   <meta name="referrer" content="no-referrer">
   <title>Polaris · Server Monitor</title>
@@ -30,6 +32,9 @@
   <script src="/assets/app.js" defer></script>
 </head>
 <body>
+  <div id="bootSplash" class="boot-splash" aria-hidden="true">
+    <span class="boot-splash-mark"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3.5 29.2 18.8 44.5 24 29.2 29.2 24 44.5 18.8 29.2 3.5 24 18.8 18.8 24 3.5Z"/><circle cx="24" cy="24" r="4.2"/></svg></span>
+  </div>
   <div class="ambient ambient-one" aria-hidden="true"></div>
   <div class="ambient ambient-two" aria-hidden="true"></div>
   <div id="authView" class="auth-shell">
@@ -72,7 +77,7 @@
         <div class="secure-note"><span class="lock-glyph">◈</span><span data-i18n="sessionNote">Protected session · HttpOnly cookie · Turnstile verification</span></div>
       </section>
     </main>
-    <footer class="site-footer"><span>POLARIS <span class="footer-separator">/</span> OBSERVABILITY</span><span data-i18n="footerPrivate">Private by design. Yours to operate.</span></footer>
+    <footer class="site-footer login-attribution-footer"><span>POLARIS <span class="footer-separator">/</span> OBSERVABILITY</span><div class="footer-attribution-group"><span id="loginCopyright" class="footer-copyright-text"></span><span id="loginFooterLinks" class="footer-social-links"></span></div><span data-i18n="footerPrivate">Private by design. Yours to operate.</span></footer>
   </div>
 
   <div id="dashboardView" class="dashboard-shell" hidden>
@@ -103,7 +108,11 @@
       <div id="globalMessage" class="global-message" role="status" hidden></div>
       <section id="nodesGrid" class="nodes-grid" aria-live="polite"></section>
       <section id="emptyState" class="empty-state" hidden><div class="empty-orbit"><span></span><span></span><span></span><b>✦</b></div><h2 data-i18n="noNodesTitle">Your orbit is quiet.</h2><p data-i18n="noNodesText">Create a probe token, install the lightweight agent on a Linux host, and your first node will appear here.</p><button class="primary-button" id="emptyAddNodeButton" type="button"><span class="plus-glyph">＋</span><span data-i18n="addFirstProbe">Add your first probe</span></button></section>
-      <footer class="dashboard-footer"><span><span class="footer-logo">✦</span> POLARIS <span class="footer-separator">/</span> <span data-i18n="footerMonitor">SERVER MONITOR</span></span><span><span class="footer-status-dot"></span><span data-i18n="footerLocal">Metrics collected by your own probes</span></span><span id="lastRefreshLabel">—</span><span class="footer-links"><span id="dashboardCopyright"></span><span id="dashboardFooterLinks"></span></span></footer>
+      <footer class="dashboard-footer">
+        <div class="footer-col footer-col-left"><span class="footer-logo">✦</span> POLARIS <span class="footer-separator">/</span> <span data-i18n="footerMonitor">SERVER MONITOR</span></div>
+        <div class="footer-col footer-col-center"><div class="footer-attribution-group"><span id="dashboardCopyright" class="footer-copyright-text"></span><span id="dashboardFooterLinks" class="footer-social-links"></span></div></div>
+        <div class="footer-col footer-col-right"><span><span class="footer-status-dot"></span><span data-i18n="footerLocal">Metrics collected by your own probes</span></span><span id="lastRefreshLabel">—</span></div>
+      </footer>
     </main>
   </div>
 
