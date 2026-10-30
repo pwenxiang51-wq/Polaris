@@ -357,6 +357,7 @@ input:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px 
 .managed-chip.is-warning { border-color: rgba(255, 93, 103, .55); background: rgba(255, 93, 103, .07); }
 .managed-chip.is-warning strong, .managed-chip.is-warning small { color: var(--red); }
 .managed-chip small { display: block; margin-top: 5px; font-size: 10px; color: var(--subtle); }
+.notify-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--subtle); display: inline-block; margin-right: 6px; vertical-align: middle; }
 .quota-track { overflow: hidden; height: 4px; margin-top: 8px; background: var(--line-strong); border-radius: 5px; }
 .quota-track span { display: block; height: 100%; border-radius: inherit; background: var(--green-bright); }
 .managed-chip.is-warning .quota-track span { background: var(--red); }
