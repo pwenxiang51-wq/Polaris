@@ -527,9 +527,13 @@
 
   function notificationStatusChip() {
     const cfg = state.config || {};
-    const tg = cfg.telegram_enabled ? translate("enabled") : translate("disabled");
-    const mail = cfg.smtp_enabled ? translate("enabled") : translate("disabled");
-    return `<div class="managed-chip"><span>${esc(translate("notificationStatus"))}</span><small>Telegram: ${esc(tg)}</small><small>Email: ${esc(mail)}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
+    const tgOn = !!cfg.telegram_enabled;
+    const mailOn = !!cfg.smtp_enabled;
+    const tg = tgOn ? translate("enabled") : translate("disabled");
+    const mail = mailOn ? translate("enabled") : translate("disabled");
+    const tgDot = tgOn ? '<span class="pulse-dot"></span>' : '<span class="notify-dot"></span>';
+    const mailDot = mailOn ? '<span class="pulse-dot"></span>' : '<span class="notify-dot"></span>';
+    return `<div class="managed-chip"><span>${esc(translate("notificationStatus"))}</span><small>${tgDot} Telegram: ${esc(tg)}</small><small>${mailDot} Email: ${esc(mail)}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
   }
 
   function geoStatusChip(node) {
