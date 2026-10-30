@@ -846,9 +846,13 @@
     $("#closeNodeModal").addEventListener("click", closeNodeModal);
     $("#closeMetadataModal").addEventListener("click", closeMetadataModal);
     $("#metadataForm").addEventListener("submit", updateNodeMetadata);
-    $("#metadataModal").addEventListener("click", (event) => { if (event.target === $("#metadataModal")) closeMetadataModal(); });
+    let metadataBackdropDown = false;
+    $("#metadataModal").addEventListener("mousedown", (event) => { metadataBackdropDown = event.target === $("#metadataModal"); });
+    $("#metadataModal").addEventListener("click", (event) => { if (metadataBackdropDown && event.target === $("#metadataModal")) closeMetadataModal(); metadataBackdropDown = false; });
     $("#doneTokenButton").addEventListener("click", closeNodeModal);
-    $("#nodeModal").addEventListener("click", (event) => { if (event.target === $("#nodeModal")) closeNodeModal(); });
+    let nodeBackdropDown = false;
+    $("#nodeModal").addEventListener("mousedown", (event) => { nodeBackdropDown = event.target === $("#nodeModal"); });
+    $("#nodeModal").addEventListener("click", (event) => { if (nodeBackdropDown && event.target === $("#nodeModal")) closeNodeModal(); nodeBackdropDown = false; });
     $("#nodeForm").addEventListener("submit", createNodeToken);
     $("#refreshButton").addEventListener("click", loadNodes);
     $("#copyTokenButton").addEventListener("click", () => copyText(state.createdToken));
