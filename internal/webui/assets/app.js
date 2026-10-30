@@ -491,7 +491,6 @@
             const label = `${translate("latencyTrend")}: ${displayProbeName(probe.name || probe.target)}`;
             return `<div class="sparkline"><div class="sparkline-head"><span>${esc(label)}</span><strong>${Number(probe.loss_percent) >= 100 ? esc(translate("timeout")) : `${latest.toFixed(1)} ms`}</strong></div>${sparklineScaled(values, "var(--cyan, var(--blue))")}</div>`;
           }).join("")}
-          ${usageSplitCard(node)}
         </div>
       </div>
     </article>`;
@@ -513,6 +512,8 @@
     const totalOut = Number(node.total_tx_usage_bytes) || 0;
     const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
     const totalCounted = mode === "outbound_only" ? totalOut : totalIn + totalOut;
+    const monthlyQuota = Number(node.monthly_quota_bytes) || 0;
+    if (monthlyQuota > 0) items.push(monthlySplitChip(monthlyCounted, monthlyQuota, monthlyIn, monthlyOut));
     const totalQuota = Number(node.total_quota_bytes) || 0;
     if (totalQuota > 0) items.push(quotaChip(translate("totalUsage"), totalCounted, totalQuota));
     items.push(geoStatusChip(node));
@@ -543,12 +544,9 @@
     return `<div class="managed-chip ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(label)}</span><strong>${fmtBytes(used)} / ${fmtBytes(quota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
   }
 
-  function usageSplitCard(node) {
-    const mode = node.quota_mode === "outbound_only" ? "outbound_only" : "total";
-    const monthlyIn = Number(node.monthly_rx_usage_bytes) || 0;
-    const monthlyOut = Number(node.monthly_tx_usage_bytes) || 0;
-    const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
-    return `<div class="sparkline usage-split-card"><div class="sparkline-head"><span>${esc(translate("monthlyUsage"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div><div class="usage-split-body"><div><span>${esc(translate("inbound"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("outbound"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div></div>`;
+  function monthlySplitChip(monthlyCounted, monthlyQuota, monthlyIn, monthlyOut) {
+    const ratio = monthlyQuota > 0 ? Math.min(100, monthlyCounted / monthlyQuota * 100) : 0;
+    return `<div class="managed-chip managed-chip-wide ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(translate("monthlyUsage"))}</span><strong>${fmtBytes(monthlyCounted)} / ${fmtBytes(monthlyQuota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div><div class="managed-split-body"><div><span>${esc(translate("inbound"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("outbound"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
   }
 
   function sparklineScaled(values, stroke) {
