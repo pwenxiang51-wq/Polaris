@@ -36,7 +36,7 @@
       timezoneNote: "Host uptime", failedNodeLoad: "Node data is temporarily unavailable.", tokenPrompt: "The token is only displayed once. Rotate it if you lose it.",
       history24h: "LAST 24 HOURS", trafficInTrend: "INBOUND RATE · 24H", trafficOutTrend: "OUTBOUND RATE · 24H", latencyTrend: "TCP CONNECT · 24H",
       demoData: "DEMO DATA", telecom: "China Telecom", unicom: "China Unicom", mobile: "China Mobile", manageNode: "VPS details", nodeMetadataTitle: "VPS details and allowances", nodeMetadataText: "Optional fields are hidden until set. Identity overrides are used when automatic detection is unavailable.",
-      expiryDate: "Expiry date", priceUSD: "Price (USD)", monthlyQuota: "Monthly traffic quota (GiB)",
+      expiryDate: "Expiry date", priceUSD: "Price (USD)", monthlyQuota: "Monthly traffic quota (GiB)", bandwidth: "Bandwidth (Mbps)", linkSpeed: "Link speed", notificationStatus: "Notification alerts", enabled: "Enabled", disabled: "Not enabled", quotaAlertThresholds: "Quota alerts at 80% · 90% · 100%",
       identityOverrides: "Identity overrides", countryName: "Country / region", countryCode: "Country code", regionName: "Region / state", cityName: "City", ispName: "ISP", asnName: "ASN",
       saveMetadata: "Save details", metadataSaved: "VPS details saved.", expiryIn: "Expires in", expired: "Expired", days: "days", monthlyUsage: "Monthly traffic", quotaMode: "Quota mode", quotaTotal: "Inbound + outbound", quotaOutbound: "Outbound only", geoRetry: "Retry geo lookup", geoStatus: "Geo lookup status", geoLast: "Last lookup", geoNext: "Next retry", geoSuccess: "Success", geoFailed: "Failed", geoNever: "Not queried yet", countedQuota: "Counted", quotaNear: "Quota nearly reached", noQuota: "No quota configured",
     },
@@ -63,7 +63,7 @@
       timezoneNote: "主机运行时间", failedNodeLoad: "暂时无法读取节点数据。", tokenPrompt: "令牌只展示一次，遗失后请重新生成以轮换令牌。",
       history24h: "最近 24 小时", trafficInTrend: "下行速率 · 24 小时", trafficOutTrend: "上行速率 · 24 小时", latencyTrend: "TCP 建连 · 24 小时",
       demoData: "演示数据", telecom: "中国电信", unicom: "中国联通", mobile: "中国移动", manageNode: "VPS 详情", nodeMetadataTitle: "VPS 详情与套餐信息", nodeMetadataText: "可选字段留空时不显示。自动识别不可用时，可以填写身份覆盖信息。",
-      expiryDate: "到期日期", priceUSD: "价格（美元）", monthlyQuota: "月流量额度（GiB）",
+      expiryDate: "到期日期", priceUSD: "价格（美元）", monthlyQuota: "月流量额度（GiB）", bandwidth: "带宽（Mbps）", linkSpeed: "链路速度", notificationStatus: "通知提醒", enabled: "已开启", disabled: "未开启", quotaAlertThresholds: "额度提醒 80% · 90% · 100%",
       identityOverrides: "手动身份覆盖", countryName: "国家或地区", countryCode: "国家代码", regionName: "州 / 省 / 地区", cityName: "城市", ispName: "运营商 ISP", asnName: "ASN",
       saveMetadata: "保存详情", metadataSaved: "VPS 详情已保存。", expiryIn: "剩余", expired: "已过期", days: "天", monthlyUsage: "本月流量", quotaMode: "额度计算模式", quotaTotal: "入站 + 出站", quotaOutbound: "仅出站", geoRetry: "重新查询地理信息", geoStatus: "地理信息查询状态", geoLast: "上次查询", geoNext: "下次重试", geoSuccess: "成功", geoFailed: "失败", geoNever: "未查询", countedQuota: "计入额度", quotaNear: "流量额度即将用尽", noQuota: "未设置流量额度",
     },
@@ -438,7 +438,7 @@
         <div class="node-actions">
           <span class="node-badge green-badge">${esc([countryCode || "GLOBAL", node.city].filter(Boolean).join(" · "))}</span>
           <span class="node-badge">${esc(String(node.arch || "Linux"))}</span>
-          <span class="node-badge blue-badge">${systemLogo(node.os_id)}${esc(String(node.os || "Linux"))}</span>
+          <span class="node-badge blue-badge">${systemLogo(node.os_id)}${esc(String(node.os || "Linux"))}</span>${fmtBandwidth(node.bandwidth_mbps) ? `<span class="node-badge">${esc(fmtBandwidth(node.bandwidth_mbps))}</span>` : ""}
           <span class="node-quick-actions"><button class="mini-action metadata-action" type="button" title="${esc(translate("manageNode"))}" aria-label="${esc(translate("manageNode"))}" data-edit-node="${esc(node.node_id)}">✎</button><button class="mini-action" type="button" title="${esc(translate("geoRetry"))}" aria-label="${esc(translate("geoRetry"))}" data-geo-node="${esc(node.node_id)}">↻</button><button class="mini-action" type="button" title="${esc(translate("deleteNode"))}" aria-label="${esc(translate("deleteNode"))}" data-remove-node="${esc(node.node_id)}">×</button></span>
         </div>
       </div>
@@ -503,6 +503,7 @@
     const monthlyQuota = Number(node.monthly_quota_bytes) || 0;
     if (monthlyQuota > 0) items.push(monthlySplitChip(monthlyCounted, monthlyQuota, monthlyIn, monthlyOut));
     items.push(geoStatusChip(node));
+    items.push(notificationStatusChip());
     if (!items.length) return "";
     return `<div class="managed-section">${items.join("")}</div>`;
   }
@@ -514,15 +515,32 @@
     return Number.isFinite(ms) && ms > Date.UTC(2000, 0, 1);
   }
 
+  function fmtBandwidth(mbps) {
+    const value = Number(mbps) || 0;
+    if (!value) return "";
+    if (value >= 1000) {
+      const gbps = value / 1000;
+      return `${Number.isInteger(gbps) ? gbps : gbps.toFixed(1)} Gbps`;
+    }
+    return `${value} Mbps`;
+  }
+
+  function notificationStatusChip() {
+    const cfg = state.config || {};
+    const tg = cfg.telegram_enabled ? translate("enabled") : translate("disabled");
+    const mail = cfg.smtp_enabled ? translate("enabled") : translate("disabled");
+    return `<div class="managed-chip"><span>${esc(translate("notificationStatus"))}</span><small>Telegram: ${esc(tg)}</small><small>Email: ${esc(mail)}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
+  }
+
   function geoStatusChip(node) {
     const attempted = isGeoTime(node.geo_attempted_at);
     if (!attempted) {
-      return `<div class="managed-chip managed-chip-wide"><span>${esc(translate("geoStatus"))}: ${esc(translate("geoNever"))}</span><small>${esc(translate("geoLast"))}: —</small><small>${esc(translate("geoNext"))}: —</small></div>`;
+      return `<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(translate("geoNever"))}</span><small>${esc(translate("geoLast"))}: —</small><small>${esc(translate("geoNext"))}: —</small></div>`;
     }
     const status = node.geo_success ? translate("geoSuccess") : translate("geoFailed");
     const last = new Date(node.geo_attempted_at).toLocaleString();
     const next = isGeoTime(node.geo_next_retry_at) ? new Date(node.geo_next_retry_at).toLocaleString() : "—";
-    return `<div class="managed-chip managed-chip-wide"><span>${esc(translate("geoStatus"))}: ${esc(status)}</span><small>${esc(translate("geoLast"))}: ${esc(last)}</small><small>${esc(translate("geoNext"))}: ${esc(next)}</small></div>`;
+    return `<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(status)}</span><small>${esc(translate("geoLast"))}: ${esc(last)}</small><small>${esc(translate("geoNext"))}: ${esc(next)}</small></div>`;
   }
 
   function monthlySplitChip(monthlyCounted, monthlyQuota, monthlyIn, monthlyOut) {
@@ -630,6 +648,7 @@
     $("#metaPriceUSD").value = node.price_usd == null ? "" : String(node.price_usd);
     $("#metaMonthlyQuota").value = node.monthly_quota_bytes ? (Number(node.monthly_quota_bytes) / (1024 ** 3)).toFixed(3).replace(/0+$/, "").replace(/\.$/, "") : "";
     $("#metaQuotaMode").value = node.quota_mode || "total";
+    $("#metaBandwidth").value = node.bandwidth_mbps ? String(node.bandwidth_mbps) : "";
     $("#metaIPv4").value = node.public_ipv4_override || "";
     $("#metaIPv6").value = node.public_ipv6_override || "";
     $("#metaCountry").value = node.country_override || "";
@@ -660,6 +679,7 @@
       monthly_quota_bytes: toQuotaBytes($("#metaMonthlyQuota").value.trim()),
       total_quota_bytes: 0,
       quota_mode: $("#metaQuotaMode").value,
+      bandwidth_mbps: $("#metaBandwidth").value.trim() === "" ? 0 : Math.round(Number($("#metaBandwidth").value)),
       public_ipv4_override: $("#metaIPv4").value.trim(),
       public_ipv6_override: $("#metaIPv6").value.trim(),
       country_override: $("#metaCountry").value.trim(),
