@@ -692,7 +692,21 @@ func (s *Store) Nodes() []shared.Report {
 	defer s.mu.RUnlock()
 	result := make([]shared.Report, 0, len(s.nodes))
 	for _, raw := range s.nodes {
-		result = append(result, applyOverrides(raw))
+		node := applyOverrides(raw)
+		if ip := identityIP(node); ip != "" {
+			if meta, ok := s.ipMetadata[ip]; ok {
+				node.GeoAttemptedAt = meta.AttemptedAt
+				node.GeoSuccess = meta.Success
+				node.GeoNextRetryAt = meta.NextRetryAt
+				// When cache has a successful lookup but node fields were never applied, fill them.
+				if meta.Success && node.Country == "" && node.CountryOverride == "" {
+					node.Country, node.CountryCode = meta.Country, meta.CountryCode
+					node.Region, node.City = meta.Region, meta.City
+					node.ISP, node.ASN = meta.ISP, meta.ASN
+				}
+			}
+		}
+		result = append(result, node)
 	}
 	sort.Slice(result, func(i, j int) bool {
 		if strings.EqualFold(result[i].Name, result[j].Name) {

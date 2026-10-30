@@ -121,9 +121,24 @@ type geoLookupResult struct {
 	Region      string `json:"region"`
 	City        string `json:"city"`
 	Connection  struct {
-		ISP string `json:"isp"`
-		ASN string `json:"asn"`
+		ISP string          `json:"isp"`
+		ASN json.RawMessage `json:"asn"` // ipwho.is returns a number; accept string or number
 	} `json:"connection"`
+}
+
+func asnFromRaw(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	var asString string
+	if err := json.Unmarshal(raw, &asString); err == nil {
+		return strings.TrimSpace(asString)
+	}
+	var asNumber json.Number
+	if err := json.Unmarshal(raw, &asNumber); err == nil {
+		return asNumber.String()
+	}
+	return strings.Trim(string(raw), "\"")
 }
 
 type turnstileResponse struct {
@@ -746,7 +761,7 @@ func (a *App) retryNodeGeo(w http.ResponseWriter, r *http.Request) {
 	if found {
 		cached.Country, cached.CountryCode = metadata.Country, metadata.CountryCode
 		cached.Region, cached.City = metadata.Region, metadata.City
-		cached.ISP, cached.ASN = metadata.Connection.ISP, metadata.Connection.ASN
+		cached.ISP, cached.ASN = metadata.Connection.ISP, asnFromRaw(metadata.Connection.ASN)
 	} else {
 		log.Printf("geo lookup failed ip=%s at=%s category=provider_or_network", ip, cached.AttemptedAt.Format(time.RFC3339))
 	}
@@ -760,7 +775,14 @@ func (a *App) retryNodeGeo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"success": found, "country": cached.Country, "country_code": cached.CountryCode, "region": cached.Region, "city": cached.City, "isp": cached.ISP, "asn": cached.ASN, "attempted_at": cached.AttemptedAt, "next_retry_at": cached.NextRetryAt})
+	if saved, ok := a.store.IPMetadata(ip); ok {
+		cached = saved
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"success": found, "country": cached.Country, "country_code": cached.CountryCode,
+		"region": cached.Region, "city": cached.City, "isp": cached.ISP, "asn": cached.ASN,
+		"attempted_at": cached.AttemptedAt, "next_retry_at": cached.NextRetryAt,
+	})
 }
 
 func (a *App) createNodeToken(w http.ResponseWriter, r *http.Request) {
@@ -851,7 +873,7 @@ func (a *App) receiveReport(w http.ResponseWriter, r *http.Request) {
 				if found {
 					cached.Country, cached.CountryCode = metadata.Country, metadata.CountryCode
 					cached.Region, cached.City = metadata.Region, metadata.City
-					cached.ISP, cached.ASN = metadata.Connection.ISP, metadata.Connection.ASN
+					cached.ISP, cached.ASN = metadata.Connection.ISP, asnFromRaw(metadata.Connection.ASN)
 				}
 				if !found {
 					log.Printf("geo lookup failed ip=%s at=%s category=provider_or_network", ip, cached.AttemptedAt.Format(time.RFC3339))
@@ -883,23 +905,39 @@ func (a *App) lookupIPMetadata(parent context.Context, ip string) (geoLookupResu
 	if parsed := net.ParseIP(ip); parsed == nil {
 		return geoLookupResult{}, false
 	}
-	ctx, cancel := context.WithTimeout(parent, 2500*time.Millisecond)
+	// Detach from the request context so a short-lived client cancel cannot abort the provider call.
+	// 8s covers cold DNS in constrained panel containers; the previous 2.5s was often too tight.
+	base := context.Background()
+	if parent != nil {
+		base = context.WithoutCancel(parent)
+	}
+	ctx, cancel := context.WithTimeout(base, 8*time.Second)
 	defer cancel()
-	client := &http.Client{Timeout: 2500 * time.Millisecond, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	client := &http.Client{Timeout: 8 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ipwho.is/"+url.PathEscape(ip), nil)
 	if err != nil {
+		log.Printf("geo lookup failed ip=%s category=request_build", ip)
 		return geoLookupResult{}, false
 	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "PolarisPanel/1.0")
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("geo lookup failed ip=%s category=network", ip)
 		return geoLookupResult{}, false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("geo lookup failed ip=%s category=http_status status=%d", ip, resp.StatusCode)
 		return geoLookupResult{}, false
 	}
 	var result geoLookupResult
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 16*1024)).Decode(&result); err != nil || !result.Success {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 16*1024)).Decode(&result); err != nil {
+		log.Printf("geo lookup failed ip=%s category=decode", ip)
+		return geoLookupResult{}, false
+	}
+	if !result.Success {
+		log.Printf("geo lookup failed ip=%s category=provider_success_false", ip)
 		return geoLookupResult{}, false
 	}
 	return result, true

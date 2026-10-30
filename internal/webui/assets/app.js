@@ -38,7 +38,7 @@
       demoData: "DEMO DATA", telecom: "China Telecom", unicom: "China Unicom", mobile: "China Mobile", manageNode: "Node details", nodeMetadataTitle: "Node details and allowances", nodeMetadataText: "Optional fields are hidden until set. Identity overrides are used when automatic detection is unavailable.",
       expiryDate: "Expiry date", priceUSD: "Price (USD)", monthlyQuota: "Monthly traffic quota (GiB)", totalQuota: "Total traffic quota (GiB)",
       identityOverrides: "Identity overrides", countryName: "Country / region", countryCode: "Country code", regionName: "Region / state", cityName: "City", ispName: "ISP", asnName: "ASN",
-      saveMetadata: "Save details", metadataSaved: "Node details saved.", expiryIn: "Expires in", expired: "Expired", days: "days", monthlyUsage: "Monthly traffic", totalUsage: "Tracked traffic", quotaMode: "Quota mode", quotaTotal: "Inbound + outbound", quotaOutbound: "Outbound only", geoRetry: "Retry geo lookup", geoStatus: "Geo lookup status", geoLast: "Last lookup", geoNext: "Next retry", geoSuccess: "Success", geoFailed: "Failed", quotaNear: "Quota nearly reached", noQuota: "No quota configured",
+      saveMetadata: "Save details", metadataSaved: "Node details saved.", expiryIn: "Expires in", expired: "Expired", days: "days", monthlyUsage: "Monthly traffic", totalUsage: "Tracked traffic", quotaMode: "Quota mode", quotaTotal: "Inbound + outbound", quotaOutbound: "Outbound only", geoRetry: "Retry geo lookup", geoStatus: "Geo lookup status", geoLast: "Last lookup", geoNext: "Next retry", geoSuccess: "Success", geoFailed: "Failed", geoNever: "Not queried yet", countedQuota: "Counted", quotaNear: "Quota nearly reached", noQuota: "No quota configured",
     },
     zh: {
       privateConsole: "私有基础设施控制台", loginTitle: "你的服务器。<br>一屏尽在掌握。", loginSubtitle: "为轻量 VPS 打造的监控面板，让每台小机器的运行状态一目了然。",
@@ -65,7 +65,7 @@
       demoData: "演示数据", telecom: "中国电信", unicom: "中国联通", mobile: "中国移动", manageNode: "节点详情", nodeMetadataTitle: "节点详情与套餐信息", nodeMetadataText: "可选字段留空时不显示。自动识别不可用时，可以填写身份覆盖信息。",
       expiryDate: "到期日期", priceUSD: "价格（美元）", monthlyQuota: "月流量额度（GiB）", totalQuota: "总流量额度（GiB）",
       identityOverrides: "手动身份覆盖", countryName: "国家或地区", countryCode: "国家代码", regionName: "州 / 省 / 地区", cityName: "城市", ispName: "运营商 ISP", asnName: "ASN",
-      saveMetadata: "保存详情", metadataSaved: "节点详情已保存。", expiryIn: "剩余", expired: "已过期", days: "天", monthlyUsage: "本月流量", totalUsage: "累计统计流量", quotaMode: "额度计算模式", quotaTotal: "入站 + 出站", quotaOutbound: "仅出站", geoRetry: "重新查询地理信息", geoStatus: "地理信息查询状态", geoLast: "上次查询", geoNext: "下次重试", geoSuccess: "成功", geoFailed: "失败", quotaNear: "流量额度即将用尽", noQuota: "未设置流量额度",
+      saveMetadata: "保存详情", metadataSaved: "节点详情已保存。", expiryIn: "剩余", expired: "已过期", days: "天", monthlyUsage: "本月流量", totalUsage: "累计统计流量", quotaMode: "额度计算模式", quotaTotal: "入站 + 出站", quotaOutbound: "仅出站", geoRetry: "重新查询地理信息", geoStatus: "地理信息查询状态", geoLast: "上次查询", geoNext: "下次重试", geoSuccess: "成功", geoFailed: "失败", geoNever: "未查询", countedQuota: "计入额度", quotaNear: "流量额度即将用尽", noQuota: "未设置流量额度",
     },
   };
 
@@ -221,9 +221,29 @@
       const footerLinks = $("#dashboardFooterLinks");
       if (footerLinks) {
         footerLinks.replaceChildren();
-        [["GitHub", state.config.footer_github], ["Telegram", state.config.footer_telegram]].forEach(([label, href]) => {
+        const iconLinks = [
+          {
+            label: "GitHub",
+            href: state.config.footer_github,
+            svg: '<svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.468-2.38 1.235-3.22-.123-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.653 1.653.242 2.874.12 3.176.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'
+          },
+          {
+            label: "Telegram",
+            href: state.config.footer_telegram,
+            svg: '<svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.788.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>'
+          }
+        ];
+        iconLinks.forEach(({ label, href, svg }) => {
           if (!href) return;
-          const link = document.createElement("a"); link.href = href; link.textContent = label; link.target = "_blank"; link.rel = "noopener noreferrer"; footerLinks.appendChild(link);
+          const link = document.createElement("a");
+          link.href = href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.className = "footer-social-link";
+          link.setAttribute("aria-label", label);
+          link.title = label;
+          link.innerHTML = svg;
+          footerLinks.appendChild(link);
         });
       }
       loadTurnstile(state.config.turnstile_sitekey);
@@ -460,6 +480,7 @@
             const label = `${translate("latencyTrend")}: ${displayProbeName(probe.name || probe.target)}`;
             return `<div class="sparkline"><div class="sparkline-head"><span>${esc(label)}</span><strong>${Number(probe.loss_percent) >= 100 ? esc(translate("timeout")) : `${latest.toFixed(1)} ms`}</strong></div>${sparklineScaled(values, "var(--cyan, var(--blue))")}</div>`;
           }).join("")}
+          ${usageSplitCard(node)}
         </div>
       </div>
     </article>`;
@@ -482,18 +503,43 @@
     const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
     const totalCounted = mode === "outbound_only" ? totalOut : totalIn + totalOut;
     const monthlyQuota = Number(node.monthly_quota_bytes) || 0;
-    if (monthlyQuota > 0) items.push(quotaChip(translate("monthlyUsage"), monthlyCounted, monthlyQuota, monthlyIn, monthlyOut));
+    if (monthlyQuota > 0) items.push(quotaChip(translate("monthlyUsage"), monthlyCounted, monthlyQuota));
     const totalQuota = Number(node.total_quota_bytes) || 0;
-    if (totalQuota > 0) items.push(quotaChip(translate("totalUsage"), totalCounted, totalQuota, totalIn, totalOut));
-    const geoStatus = node.geo_success ? translate("geoSuccess") : translate("geoFailed");
-    items.push(`<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(geoStatus)}</span><small>${esc(translate("geoLast"))}: ${esc(node.geo_attempted_at ? new Date(node.geo_attempted_at).toLocaleString() : "—")}</small><small>${esc(translate("geoNext"))}: ${esc(node.geo_next_retry_at ? new Date(node.geo_next_retry_at).toLocaleString() : "—")}</small></div>`);
+    if (totalQuota > 0) items.push(quotaChip(translate("totalUsage"), totalCounted, totalQuota));
+    items.push(geoStatusChip(node));
     if (!items.length) return "";
     return `<div class="managed-section">${items.join("")}</div>`;
   }
 
-  function quotaChip(label, used, quota, inbound = 0, outbound = 0) {
+  function isGeoTime(value) {
+    if (!value) return false;
+    const ms = Date.parse(value);
+    // Reject Go zero time and other pre-epoch placeholders that browsers render as 1/1.
+    return Number.isFinite(ms) && ms > Date.UTC(2000, 0, 1);
+  }
+
+  function geoStatusChip(node) {
+    const attempted = isGeoTime(node.geo_attempted_at);
+    if (!attempted) {
+      return `<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(translate("geoNever"))}</span><small>${esc(translate("geoLast"))}: —</small><small>${esc(translate("geoNext"))}: —</small></div>`;
+    }
+    const status = node.geo_success ? translate("geoSuccess") : translate("geoFailed");
+    const last = new Date(node.geo_attempted_at).toLocaleString();
+    const next = isGeoTime(node.geo_next_retry_at) ? new Date(node.geo_next_retry_at).toLocaleString() : "—";
+    return `<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(status)}</span><small>${esc(translate("geoLast"))}: ${esc(last)}</small><small>${esc(translate("geoNext"))}: ${esc(next)}</small></div>`;
+  }
+
+  function quotaChip(label, used, quota) {
     const ratio = quota > 0 ? Math.min(100, used / quota * 100) : 0;
-    return `<div class="managed-chip ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(label)}</span><small>${esc(translate("ingress"))} ${fmtBytes(inbound)} / ${esc(translate("egress"))} ${fmtBytes(outbound)}</small><strong>${fmtBytes(used)} / ${fmtBytes(quota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
+    return `<div class="managed-chip ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(label)}</span><strong>${fmtBytes(used)} / ${fmtBytes(quota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
+  }
+
+  function usageSplitCard(node) {
+    const mode = node.quota_mode === "outbound_only" ? "outbound_only" : "total";
+    const monthlyIn = Number(node.monthly_rx_usage_bytes) || 0;
+    const monthlyOut = Number(node.monthly_tx_usage_bytes) || 0;
+    const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
+    return `<div class="sparkline usage-split-card"><div class="sparkline-head"><span>${esc(translate("monthlyUsage"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div><div class="usage-split-body"><div><span>${esc(translate("ingress"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("egress"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div></div>`;
   }
 
   function sparklineScaled(values, stroke) {
@@ -667,7 +713,8 @@
     const id = String(osID || "").toLowerCase();
     if (id === "ubuntu") return '<img class="system-logo" src="/assets/os-ubuntu.png" alt="" aria-hidden="true">';
     if (id === "debian") return '<img class="system-logo" src="/assets/os-debian.png" alt="" aria-hidden="true">';
-    return '<svg class="system-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 14 8l6 2-6 2-2 8-2-8-6-2 6-2z"/></svg>';
+    // Simple generic Linux mark (hexagon), not a star and not the full Tux artwork.
+    return '<svg class="system-logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.8 7.2 12 12l8.2-4.8M12 12v9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
   }
 
   function openNodeModal() {
