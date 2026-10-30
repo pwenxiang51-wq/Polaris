@@ -104,6 +104,7 @@ type nodeMetadataRequest struct {
 	MonthlyQuotaBytes   uint64   `json:"monthly_quota_bytes"`
 	TotalQuotaBytes     uint64   `json:"total_quota_bytes"`
 	QuotaMode           string   `json:"quota_mode"`
+	BandwidthMbps       int      `json:"bandwidth_mbps"`
 	PublicIPv4Override  string   `json:"public_ipv4_override"`
 	PublicIPv6Override  string   `json:"public_ipv6_override"`
 	CountryOverride     string   `json:"country_override"`
@@ -378,6 +379,8 @@ func (a *App) publicConfig(w http.ResponseWriter, r *http.Request) {
 		"footer_copyright":  copyright,
 		"footer_github":     github,
 		"footer_telegram":   telegram,
+		"telegram_enabled":  a.telegramEnabled(),
+		"smtp_enabled":      a.smtpEnabled(),
 	})
 }
 
@@ -696,6 +699,10 @@ func (a *App) updateNodeMetadata(w http.ResponseWriter, r *http.Request) {
 	if req.QuotaMode == "" {
 		req.QuotaMode = "total"
 	}
+	if req.BandwidthMbps < 0 || req.BandwidthMbps > 1000000 {
+		writeError(w, http.StatusBadRequest, "Bandwidth must be between 0 and 1000000 Mbps")
+		return
+	}
 	if req.MonthlyQuotaBytes > 1<<60 || req.TotalQuotaBytes > 1<<60 {
 		writeError(w, http.StatusBadRequest, "Quota value is too large")
 		return
@@ -739,7 +746,7 @@ func (a *App) updateNodeMetadata(w http.ResponseWriter, r *http.Request) {
 	req.RegionOverride, req.CityOverride = strings.TrimSpace(req.RegionOverride), strings.TrimSpace(req.CityOverride)
 	req.ISPOverride, req.ASNOverride = strings.TrimSpace(req.ISPOverride), strings.TrimSpace(req.ASNOverride)
 	if err := a.store.UpdateMetadata(nodeID, store.MetadataUpdate{
-		ExpiryDate: req.ExpiryDate, PriceUSD: req.PriceUSD, MonthlyQuotaBytes: req.MonthlyQuotaBytes, TotalQuotaBytes: req.TotalQuotaBytes, QuotaMode: req.QuotaMode,
+		ExpiryDate: req.ExpiryDate, PriceUSD: req.PriceUSD, MonthlyQuotaBytes: req.MonthlyQuotaBytes, TotalQuotaBytes: req.TotalQuotaBytes, QuotaMode: req.QuotaMode, BandwidthMbps: req.BandwidthMbps,
 		PublicIPv4Override: req.PublicIPv4Override, PublicIPv6Override: req.PublicIPv6Override, CountryOverride: req.CountryOverride,
 		CountryCodeOverride: req.CountryCodeOverride, RegionOverride: req.RegionOverride, CityOverride: req.CityOverride,
 		ISPOverride: req.ISPOverride, ASNOverride: req.ASNOverride,
