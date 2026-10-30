@@ -21,7 +21,7 @@
       nodeIdHint: "Use letters, numbers, dots, underscores or hyphens.", generateToken: "Generate one-time token", tokenCreated: "TOKEN CREATED", saveTokenNow: "Save this token now.",
       tokenWarning: "Polaris stores only a token hash. This raw token will not be shown again.", agentToken: "Agent token", copy: "Copy", agentConfig: "Agent environment",
       copyConfig: "Copy agent configuration", agentNextStep: "Install the polaris-agent binary and place these values in a root-readable environment file.", done: "Done",
-      online: "ONLINE", offline: "OFFLINE", cpu: "CPU", memory: "MEMORY", disk: "DISK", load: "LOAD", ingress: "IN", egress: "OUT",
+      online: "ONLINE", offline: "OFFLINE", cpu: "CPU", memory: "MEMORY", disk: "DISK", load: "LOAD", ingress: "IN", egress: "OUT", inbound: "INBOUND", outbound: "OUTBOUND",
       received: "Received", sent: "Sent", publicIPv4: "PUBLIC IPV4", publicIPv6: "PUBLIC IPV6", operatingSystem: "OPERATING SYSTEM", kernel: "KERNEL",
       uptime: "UPTIME", processor: "PROCESSOR", location: "LOCATION", network: "NETWORK / ASN", lastSeen: "LAST REPORT", latency: "NETWORK LATENCY",
       noPublicIP: "Not detected", unknown: "Unknown", firstReportWaiting: "Waiting for the first report", deleteNode: "Revoke token and remove node",
@@ -53,7 +53,7 @@
       nodeDisplayName: "显示名称", nodeIdentifier: "节点标识", nodeIdHint: "仅使用英文字母、数字、点、下划线或连字符。", generateToken: "生成一次性令牌", tokenCreated: "令牌已创建",
       saveTokenNow: "请立即保存令牌。", tokenWarning: "Polaris 只保存令牌哈希，不会再次显示这段原始令牌。", agentToken: "探针令牌", copy: "复制", agentConfig: "探针环境变量",
       copyConfig: "复制探针配置", agentNextStep: "安装 polaris-agent，并将这些配置保存到仅管理员可读的环境文件中。", done: "完成", online: "在线", offline: "离线", cpu: "CPU", memory: "内存", disk: "磁盘", load: "负载",
-      ingress: "下行", egress: "上行", received: "接收流量", sent: "发送流量", publicIPv4: "公网 IPv4", publicIPv6: "公网 IPv6", operatingSystem: "操作系统", kernel: "内核版本", uptime: "运行时间",
+      ingress: "下行", egress: "上行", inbound: "入站", outbound: "出站", received: "接收流量", sent: "发送流量", publicIPv4: "公网 IPv4", publicIPv6: "公网 IPv6", operatingSystem: "操作系统", kernel: "内核版本", uptime: "运行时间",
       processor: "处理器", location: "地理位置", network: "网络 / ASN", lastSeen: "最近上报", latency: "网络延迟", noPublicIP: "未检测到", unknown: "未知", firstReportWaiting: "等待首次上报",
       deleteNode: "撤销令牌并删除节点", deleteConfirm: "确定删除该节点并撤销其探针令牌？此操作无法撤销。", tokenCreatedToast: "探针令牌已创建，请在关闭窗口前复制保存。", copySuccess: "已复制到剪贴板。",
       copyFailed: "无法访问剪贴板，请手动选择并复制文本。", nodeRemoved: "节点和探针令牌已删除。", loginFailed: "登录失败，请检查账户、密码和人机验证。", verificationNotConfigured: "尚未配置 Turnstile，请联系管理员完成配置。",
@@ -211,41 +211,51 @@
     document.head.appendChild(script);
   }
 
+
+  const FOOTER_GITHUB_SVG = '<svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.468-2.38 1.235-3.22-.123-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.653 1.653.242 2.874.12 3.176.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>';
+  const FOOTER_TELEGRAM_SVG = '<svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.788.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>';
+
+  function renderFooterAttribution(cfg) {
+    const copyrightText = (cfg && cfg.footer_copyright) || "Copyright © 2026 Velox | All rights reserved.";
+    const github = (cfg && cfg.footer_github) || "https://github.com/pwenxiang51-wq";
+    const telegram = (cfg && cfg.footer_telegram) || "https://t.me/Velox95";
+    [["dashboardCopyright", "dashboardFooterLinks"], ["loginCopyright", "loginFooterLinks"]].forEach(([copyId, linksId]) => {
+      const copyright = document.getElementById(copyId);
+      if (copyright) copyright.textContent = copyrightText;
+      const footerLinks = document.getElementById(linksId);
+      if (!footerLinks) return;
+      footerLinks.replaceChildren();
+      [
+        { label: "GitHub", href: github, svg: FOOTER_GITHUB_SVG },
+        { label: "Telegram", href: telegram, svg: FOOTER_TELEGRAM_SVG },
+      ].forEach(({ label, href, svg }) => {
+        if (!href) return;
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "footer-social-link";
+        link.setAttribute("aria-label", label);
+        link.title = label;
+        link.innerHTML = svg;
+        footerLinks.appendChild(link);
+      });
+    });
+  }
+
+  function hideBootSplash() {
+    const el = document.getElementById("bootSplash");
+    if (!el) return;
+    el.classList.add("is-hidden");
+    window.setTimeout(() => el.remove(), 220);
+  }
+
   async function initialize() {
     applyTheme();
     applyLanguage();
     try {
       state.config = await request("/api/public-config");
-      const copyright = $("#dashboardCopyright");
-      if (copyright) copyright.textContent = state.config.footer_copyright || "";
-      const footerLinks = $("#dashboardFooterLinks");
-      if (footerLinks) {
-        footerLinks.replaceChildren();
-        const iconLinks = [
-          {
-            label: "GitHub",
-            href: state.config.footer_github,
-            svg: '<svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.236 1.84 1.236 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.468-2.38 1.235-3.22-.123-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23.96-.267 1.98-.4 3-.405 1.02.005 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.653 1.653.242 2.874.12 3.176.77.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.43.372.823 1.102.823 2.222 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>'
-          },
-          {
-            label: "Telegram",
-            href: state.config.footer_telegram,
-            svg: '<svg class="footer-social-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.788.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>'
-          }
-        ];
-        iconLinks.forEach(({ label, href, svg }) => {
-          if (!href) return;
-          const link = document.createElement("a");
-          link.href = href;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.className = "footer-social-link";
-          link.setAttribute("aria-label", label);
-          link.title = label;
-          link.innerHTML = svg;
-          footerLinks.appendChild(link);
-        });
-      }
+      renderFooterAttribution(state.config);
       loadTurnstile(state.config.turnstile_sitekey);
       try {
         await request("/api/me");
@@ -257,6 +267,8 @@
     } catch (_) {
       showView("auth");
       showLoginError(translate("requestFailed"));
+    } finally {
+      hideBootSplash();
     }
   }
 
@@ -429,14 +441,13 @@
     return `<article class="node-card ${online ? "is-online" : "is-offline"}">
       <div class="node-card-head">
         <div class="node-title-row">
-          <div class="node-title-left"><div class="country-flag" aria-label="${esc(countryCode || "Unknown country")}">${flag}</div><div class="node-name-wrap"><h3 class="node-name">${esc(node.name || node.node_id || "Unnamed node")}</h3><div class="node-subname"><span>${esc(node.hostname || node.node_id || "—")}</span><span>·</span><span>${esc(countryCode || "--")}</span></div></div></div>
+          <div class="node-title-left"><div class="country-flag" aria-label="${esc(countryCode || "Unknown country")}">${flag}</div><div class="node-name-wrap"><h3 class="node-name">${esc(node.name || node.node_id || "Unnamed node")}</h3><div class="node-subname"><span>${esc(node.hostname || node.node_id || "—")}</span></div></div></div>
           <span class="node-status-pill ${online ? "" : "offline"}">${esc(statusText)}</span>${node.demo_data ? `<span class="node-badge demo-badge">${esc(translate("demoData"))}</span>` : ""}
         </div>
         <div class="node-actions">
-          <span class="node-badge green-badge">${esc(countryCode || "GLOBAL")}</span>
+          <span class="node-badge green-badge">${esc([countryCode || "GLOBAL", node.city].filter(Boolean).join(" · "))}</span>
           <span class="node-badge">${esc(String(node.arch || "Linux"))}</span>
           <span class="node-badge blue-badge">${systemLogo(node.os_id)}${esc(String(node.os || "Linux"))}</span>
-          ${node.city ? `<span class="node-badge">${esc(node.city)}</span>` : ""}
           <span class="node-quick-actions"><button class="mini-action metadata-action" type="button" title="${esc(translate("manageNode"))}" aria-label="${esc(translate("manageNode"))}" data-edit-node="${esc(node.node_id)}">✎</button><button class="mini-action" type="button" title="${esc(translate("geoRetry"))}" aria-label="${esc(translate("geoRetry"))}" data-geo-node="${esc(node.node_id)}">↻</button><button class="mini-action" type="button" title="${esc(translate("deleteNode"))}" aria-label="${esc(translate("deleteNode"))}" data-remove-node="${esc(node.node_id)}">×</button></span>
         </div>
       </div>
@@ -502,8 +513,6 @@
     const totalOut = Number(node.total_tx_usage_bytes) || 0;
     const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
     const totalCounted = mode === "outbound_only" ? totalOut : totalIn + totalOut;
-    const monthlyQuota = Number(node.monthly_quota_bytes) || 0;
-    if (monthlyQuota > 0) items.push(quotaChip(translate("monthlyUsage"), monthlyCounted, monthlyQuota));
     const totalQuota = Number(node.total_quota_bytes) || 0;
     if (totalQuota > 0) items.push(quotaChip(translate("totalUsage"), totalCounted, totalQuota));
     items.push(geoStatusChip(node));
@@ -539,7 +548,7 @@
     const monthlyIn = Number(node.monthly_rx_usage_bytes) || 0;
     const monthlyOut = Number(node.monthly_tx_usage_bytes) || 0;
     const monthlyCounted = mode === "outbound_only" ? monthlyOut : monthlyIn + monthlyOut;
-    return `<div class="sparkline usage-split-card"><div class="sparkline-head"><span>${esc(translate("monthlyUsage"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div><div class="usage-split-body"><div><span>${esc(translate("ingress"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("egress"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div></div>`;
+    return `<div class="sparkline usage-split-card"><div class="sparkline-head"><span>${esc(translate("monthlyUsage"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div><div class="usage-split-body"><div><span>${esc(translate("inbound"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("outbound"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div></div>`;
   }
 
   function sparklineScaled(values, stroke) {
@@ -586,8 +595,12 @@
   }
 
   function countryFlag(code) {
-    if (!/^[A-Z]{2}$/.test(code)) return "🌐";
-    return String.fromCodePoint(...Array.from(code).map((letter) => 127397 + letter.charCodeAt(0)));
+    const upper = String(code || "").toUpperCase();
+    if (!/^[A-Z]{2}$/.test(upper)) return `<span class="flag-fallback">🌐</span>`;
+    const lower = upper.toLowerCase();
+    const emoji = String.fromCodePoint(...Array.from(upper).map((letter) => 127397 + letter.charCodeAt(0)));
+    // Prefer flagcdn image (Windows-safe); fall back to emoji if the image fails to load.
+    return `<img class="country-flag-img" src="https://flagcdn.com/w40/${lower}.png" width="20" height="15" alt="${upper}" loading="lazy" decoding="async" data-flag-emoji="${emoji}" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('span'),{className:'flag-fallback',textContent:this.dataset.flagEmoji||'🌐'}));">`;
   }
 
   function safePercent(value) {
