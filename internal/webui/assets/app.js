@@ -533,18 +533,21 @@
     const mail = mailOn ? translate("enabled") : translate("disabled");
     const tgDot = tgOn ? '<span class="pulse-dot"></span>' : '<span class="notify-dot"></span>';
     const mailDot = mailOn ? '<span class="pulse-dot"></span>' : '<span class="notify-dot"></span>';
-    return `<div class="managed-chip"><span>${esc(translate("notificationStatus"))}</span><small>${tgDot} Telegram: ${esc(tg)}</small><small>${mailDot} Email: ${esc(mail)}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
+    const tgWord = tgOn ? `<b class="status-ok">${esc(tg)}</b>` : `<b class="status-dim">${esc(tg)}</b>`;
+    const mailWord = mailOn ? `<b class="status-ok">${esc(mail)}</b>` : `<b class="status-dim">${esc(mail)}</b>`;
+    return `<div class="managed-chip managed-chip-bright"><span>${esc(translate("notificationStatus"))}</span><small>${tgDot} Telegram: ${tgWord}</small><small>${mailDot} Email: ${mailWord}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
   }
 
   function geoStatusChip(node) {
     const attempted = isGeoTime(node.geo_attempted_at);
     if (!attempted) {
-      return `<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(translate("geoNever"))}</span><small>${esc(translate("geoLast"))}: —</small><small>${esc(translate("geoNext"))}: —</small></div>`;
+      return `<div class="managed-chip managed-chip-bright"><span>${esc(translate("geoStatus"))}: <b class="status-dim">${esc(translate("geoNever"))}</b></span><small>${esc(translate("geoLast"))}: —</small><small>${esc(translate("geoNext"))}: —</small></div>`;
     }
     const status = node.geo_success ? translate("geoSuccess") : translate("geoFailed");
     const last = new Date(node.geo_attempted_at).toLocaleString();
     const next = isGeoTime(node.geo_next_retry_at) ? new Date(node.geo_next_retry_at).toLocaleString() : "—";
-    return `<div class="managed-chip"><span>${esc(translate("geoStatus"))}: ${esc(status)}</span><small>${esc(translate("geoLast"))}: ${esc(last)}</small><small>${esc(translate("geoNext"))}: ${esc(next)}</small></div>`;
+    const statusWord = node.geo_success ? `<b class="status-ok">${esc(status)}</b>` : `<b class="status-bad">${esc(status)}</b>`;
+    return `<div class="managed-chip managed-chip-bright"><span>${esc(translate("geoStatus"))}: ${statusWord}</span><small>${esc(translate("geoLast"))}: ${esc(last)}</small><small>${esc(translate("geoNext"))}: ${esc(next)}</small></div>`;
   }
 
   function monthlySplitChip(monthlyCounted, monthlyQuota, monthlyIn, monthlyOut) {
