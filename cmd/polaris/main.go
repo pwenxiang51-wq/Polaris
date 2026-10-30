@@ -365,7 +365,7 @@ func (a *App) publicConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	github := a.cfg.FooterGitHub
 	if github == "" {
-		github = "https://github.com/pwenxiang51-wq"
+		github = "https://github.com/pwenxiang51-wq/Polaris"
 	}
 	telegram := a.cfg.FooterTelegram
 	if telegram == "" {
