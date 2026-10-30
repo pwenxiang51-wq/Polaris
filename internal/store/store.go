@@ -45,6 +45,7 @@ type MetadataUpdate struct {
 	MonthlyQuotaBytes   uint64
 	TotalQuotaBytes     uint64
 	QuotaMode           string
+	BandwidthMbps       int
 	PublicIPv4Override  string
 	PublicIPv6Override  string
 	CountryOverride     string
@@ -904,6 +905,7 @@ func (s *Store) UpdateMetadata(nodeID string, update MetadataUpdate) error {
 	node.PriceUSD = update.PriceUSD
 	node.MonthlyQuotaBytes, node.TotalQuotaBytes = update.MonthlyQuotaBytes, update.TotalQuotaBytes
 	node.QuotaMode = update.QuotaMode
+	node.BandwidthMbps = update.BandwidthMbps
 	node.PublicIPv4Override, node.PublicIPv6Override = update.PublicIPv4Override, update.PublicIPv6Override
 	node.CountryOverride, node.CountryCodeOverride = update.CountryOverride, update.CountryCodeOverride
 	node.RegionOverride, node.CityOverride = update.RegionOverride, update.CityOverride
