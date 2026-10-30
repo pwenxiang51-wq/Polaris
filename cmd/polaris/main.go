@@ -298,7 +298,7 @@ func (a *App) securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Permitted-Cross-Domain-Policies", "none")
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://flagcdn.com")
 		w.Header().Set("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
 	})
@@ -359,13 +359,25 @@ func (a *App) health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) publicConfig(w http.ResponseWriter, r *http.Request) {
+	copyright := a.cfg.FooterCopyright
+	if copyright == "" {
+		copyright = "Copyright © 2026 Velox | All rights reserved."
+	}
+	github := a.cfg.FooterGitHub
+	if github == "" {
+		github = "https://github.com/pwenxiang51-wq"
+	}
+	telegram := a.cfg.FooterTelegram
+	if telegram == "" {
+		telegram = "https://t.me/Velox95"
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"turnstile_sitekey": a.cfg.TurnstileSiteKey,
 		"turnstile_enabled": a.cfg.TurnstileSiteKey != "",
 		"external_url":      a.cfg.ExternalURL,
-		"footer_copyright":  a.cfg.FooterCopyright,
-		"footer_github":     a.cfg.FooterGitHub,
-		"footer_telegram":   a.cfg.FooterTelegram,
+		"footer_copyright":  copyright,
+		"footer_github":     github,
+		"footer_telegram":   telegram,
 	})
 }
 
