@@ -75,6 +75,7 @@ type Report struct {
 	TotalRXUsageBytes   uint64    `json:"total_rx_usage_bytes,omitempty"`
 	TotalTXUsageBytes   uint64    `json:"total_tx_usage_bytes,omitempty"`
 	QuotaMode           string    `json:"quota_mode,omitempty"`
+	BandwidthMbps       int       `json:"bandwidth_mbps,omitempty"`
 	UsageMonth          string    `json:"usage_month,omitempty"`
 
 	PublicIPv4Override  string `json:"public_ipv4_override,omitempty"`
