@@ -640,6 +640,7 @@ func preserveManaged(report *shared.Report, previous shared.Report) {
 	report.MonthlyQuotaBytes = previous.MonthlyQuotaBytes
 	report.TotalQuotaBytes = previous.TotalQuotaBytes
 	report.QuotaMode = previous.QuotaMode
+	report.BandwidthMbps = previous.BandwidthMbps
 	report.PublicIPv4Override = previous.PublicIPv4Override
 	report.PublicIPv6Override = previous.PublicIPv6Override
 	report.CountryOverride = previous.CountryOverride
