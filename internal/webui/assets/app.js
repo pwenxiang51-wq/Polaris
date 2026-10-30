@@ -217,7 +217,7 @@
 
   function renderFooterAttribution(cfg) {
     const copyrightText = (cfg && cfg.footer_copyright) || "Copyright © 2026 Velox | All rights reserved.";
-    const github = (cfg && cfg.footer_github) || "https://github.com/pwenxiang51-wq";
+    const github = (cfg && cfg.footer_github) || "https://github.com/pwenxiang51-wq/Polaris";
     const telegram = (cfg && cfg.footer_telegram) || "https://t.me/Velox95";
     [["dashboardCopyright", "dashboardFooterLinks"], ["loginCopyright", "loginFooterLinks"]].forEach(([copyId, linksId]) => {
       const copyright = document.getElementById(copyId);
