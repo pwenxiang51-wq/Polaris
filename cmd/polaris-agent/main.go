@@ -102,7 +102,7 @@ func loadAgentConfig() (AgentConfig, error) {
 		return AgentConfig{}, errors.New("POLARIS_NODE_ID contains invalid characters")
 	}
 	if len(cfg.Token) < 40 || len(cfg.Token) > 256 {
-		return AgentConfig{}, errors.New("POLARIS_AGENT_TOKEN has an invalid length")
+		return AgentConfig{}, fmt.Errorf("POLARIS_AGENT_TOKEN has an invalid length %d (expected 40-256, a dashboard token is 43)", len(cfg.Token))
 	}
 	if cfg.NodeName == "" {
 		cfg.NodeName = cfg.NodeID
