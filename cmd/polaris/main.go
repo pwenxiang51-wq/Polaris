@@ -15,7 +15,6 @@ import (
 	"math"
 	"net"
 	"net/http"
-	"net/smtp"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -54,12 +53,6 @@ type Config struct {
 	FooterTelegram    string
 	TelegramBotToken  string
 	TelegramChatID    string
-	SMTPHost          string
-	SMTPPort          string
-	SMTPUser          string
-	SMTPPassword      string
-	SMTPFrom          string
-	SMTPTo            string
 }
 
 type App struct {
@@ -179,12 +172,6 @@ func loadConfig() (Config, error) {
 		FooterTelegram:    strings.TrimSpace(os.Getenv("POLARIS_FOOTER_TELEGRAM")),
 		TelegramBotToken:  optionalSecretEnv("POLARIS_TELEGRAM_BOT_TOKEN"),
 		TelegramChatID:    optionalSecretEnv("POLARIS_TELEGRAM_CHAT_ID"),
-		SMTPHost:          strings.TrimSpace(os.Getenv("POLARIS_SMTP_HOST")),
-		SMTPPort:          envOr("POLARIS_SMTP_PORT", "587"),
-		SMTPUser:          strings.TrimSpace(os.Getenv("POLARIS_SMTP_USER")),
-		SMTPPassword:      optionalSecretEnv("POLARIS_SMTP_PASSWORD"),
-		SMTPFrom:          strings.TrimSpace(os.Getenv("POLARIS_SMTP_FROM")),
-		SMTPTo:            strings.TrimSpace(os.Getenv("POLARIS_SMTP_TO")),
 	}
 	if cfg.AdminUser == "" || len(cfg.AdminUser) > 64 {
 		return Config{}, errors.New("POLARIS_ADMIN_USER must contain 1-64 characters")
@@ -380,7 +367,6 @@ func (a *App) publicConfig(w http.ResponseWriter, r *http.Request) {
 		"footer_github":     github,
 		"footer_telegram":   telegram,
 		"telegram_enabled":  a.telegramEnabled(),
-		"smtp_enabled":      a.smtpEnabled(),
 	})
 }
 
@@ -452,7 +438,7 @@ func loadNotificationState(path string) map[string]time.Time {
 	if err == nil {
 		_ = json.Unmarshal(data, &state)
 	}
-	// Migrate pre-SMTP keys (no channel prefix) to tg: so existing Telegram dedupe is preserved.
+	// Migrate pre-channel keys (no channel prefix) to tg: so existing Telegram dedupe is preserved.
 	for k, v := range state {
 		if strings.HasPrefix(k, "tg:") || strings.HasPrefix(k, "smtp:") {
 			continue
@@ -461,10 +447,6 @@ func loadNotificationState(path string) map[string]time.Time {
 		delete(state, k)
 	}
 	return state
-}
-
-func (a *App) smtpEnabled() bool {
-	return a.cfg.SMTPHost != "" && a.cfg.SMTPFrom != "" && a.cfg.SMTPTo != ""
 }
 
 func (a *App) telegramEnabled() bool {
@@ -478,8 +460,7 @@ func (a *App) checkNotifications(nodes []shared.Report) {
 		a.notifyState = make(map[string]time.Time)
 	}
 	tgOn := a.telegramEnabled()
-	smtpOn := a.smtpEnabled()
-	if !tgOn && !smtpOn {
+	if !tgOn {
 		return
 	}
 	now := time.Now().UTC()
@@ -490,15 +471,16 @@ func (a *App) checkNotifications(nodes []shared.Report) {
 		}
 		lastSeen := node.LastSeen
 		if !lastSeen.IsZero() && now.Sub(lastSeen) > 5*time.Minute {
-			msg := "Node offline: " + name + " (" + node.NodeID + "). Last report: " + lastSeen.Format(time.RFC3339)
-			a.emitChannelAlert(tgOn, smtpOn, node.NodeID+":offline", msg, now)
+			msg := "[Polaris Alert]\nNode offline\nNode: " + name + " (" + node.NodeID + ")\nLast report: " + lastSeen.Format(time.RFC3339)
+			a.emitChannelAlert(tgOn, node.NodeID+":offline", msg, now)
 		} else {
-			a.emitChannelRecovery(tgOn, smtpOn, node.NodeID+":offline", "Node recovered: "+name+" ("+node.NodeID+").", now)
+			a.emitChannelRecovery(tgOn, node.NodeID+":offline", "[Polaris Alert]\nNode recovered\nNode: "+name+" ("+node.NodeID+").", now)
 		}
 		mode := node.QuotaMode
-		if mode == "outbound_only" {
-		}
-		monthly := node.MonthlyUsageBytes
+		// Same counted usage as the dashboard monthly card: inbound + outbound,
+		// or outbound only when the quota mode is outbound_only. Do not use
+		// MonthlyUsageBytes here: it still carries a pre-split legacy total.
+		monthly := node.MonthlyRXUsageBytes + node.MonthlyTXUsageBytes
 		if mode == "outbound_only" {
 			monthly = node.MonthlyTXUsageBytes
 		}
@@ -508,8 +490,8 @@ func (a *App) checkNotifications(nodes []shared.Report) {
 			for _, threshold := range []int{80, 90, 100} {
 				if ratio >= float64(threshold) {
 					key := node.NodeID + ":quota:" + node.UsageMonth + ":" + strconv.Itoa(threshold)
-					msg := fmt.Sprintf("Monthly quota %d%%: %s (%s), %s / %s", threshold, name, node.NodeID, formatBytes(monthly), formatBytes(quota))
-					a.emitChannelAlert(tgOn, smtpOn, key, msg, now)
+					msg := fmt.Sprintf("[Polaris Alert]\nMonthly quota %d%%\nNode: %s (%s)\nUsage: %s / %s", threshold, name, node.NodeID, formatBytes(monthly), formatBytes(quota))
+					a.emitChannelAlert(tgOn, key, msg, now)
 				}
 			}
 		}
@@ -519,8 +501,8 @@ func (a *App) checkNotifications(nodes []shared.Report) {
 				for _, threshold := range []int{7, 3, 1} {
 					if days == threshold {
 						key := node.NodeID + ":expiry:" + node.ExpiryDate + ":" + strconv.Itoa(threshold)
-						msg := fmt.Sprintf("Node expiry in %d day(s): %s (%s), date %s", threshold, name, node.NodeID, node.ExpiryDate)
-						a.emitChannelAlert(tgOn, smtpOn, key, msg, now)
+						msg := fmt.Sprintf("[Polaris Alert]\nNode expiry in %d day(s)\nNode: %s (%s)\nDate: %s", threshold, name, node.NodeID, node.ExpiryDate)
+						a.emitChannelAlert(tgOn, key, msg, now)
 					}
 				}
 			}
@@ -532,37 +514,23 @@ func (a *App) checkNotifications(nodes []shared.Report) {
 	}
 }
 
-// emitChannelAlert records and sends once per channel. TG and SMTP keys are independent.
-func (a *App) emitChannelAlert(tgOn, smtpOn bool, baseKey, message string, now time.Time) {
+// emitChannelAlert records and sends once per channel via Telegram.
+func (a *App) emitChannelAlert(tgOn bool, baseKey, message string, now time.Time) {
 	if tgOn {
 		key := "tg:" + baseKey
 		if _, sent := a.notifyState[key]; !sent {
 			a.sendTelegram(message)
-			a.notifyState[key] = now
-		}
-	}
-	if smtpOn {
-		key := "smtp:" + baseKey
-		if _, sent := a.notifyState[key]; !sent {
-			a.sendSMTP(message)
 			a.notifyState[key] = now
 		}
 	}
 }
 
 // emitChannelRecovery sends a recovery message only on channels that previously recorded offline.
-func (a *App) emitChannelRecovery(tgOn, smtpOn bool, baseKey, message string, now time.Time) {
+func (a *App) emitChannelRecovery(tgOn bool, baseKey, message string, now time.Time) {
 	if tgOn {
 		key := "tg:" + baseKey
 		if _, sent := a.notifyState[key]; sent {
 			a.sendTelegram(message)
-			delete(a.notifyState, key)
-		}
-	}
-	if smtpOn {
-		key := "smtp:" + baseKey
-		if _, sent := a.notifyState[key]; sent {
-			a.sendSMTP(message)
 			delete(a.notifyState, key)
 		}
 	}
@@ -590,39 +558,6 @@ func (a *App) sendTelegram(message string) {
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		log.Printf("telegram notification failed category=http_status status=%d", resp.StatusCode)
-	}
-}
-
-func (a *App) sendSMTP(message string) {
-	if !a.smtpEnabled() {
-		return
-	}
-	host := a.cfg.SMTPHost
-	port := a.cfg.SMTPPort
-	if port == "" {
-		port = "587"
-	}
-	from := a.cfg.SMTPFrom
-	to := a.cfg.SMTPTo
-	subject := "Polaris alert"
-	// Plain text body only; never log credentials or message secrets beyond category.
-	body := strings.Builder{}
-	body.WriteString("From: " + from + "\r\n")
-	body.WriteString("To: " + to + "\r\n")
-	body.WriteString("Subject: " + subject + "\r\n")
-	body.WriteString("MIME-Version: 1.0\r\n")
-	body.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
-	body.WriteString("\r\n")
-	body.WriteString(message)
-	body.WriteString("\r\n")
-	addr := net.JoinHostPort(host, port)
-	var auth smtp.Auth
-	if a.cfg.SMTPUser != "" {
-		auth = smtp.PlainAuth("", a.cfg.SMTPUser, a.cfg.SMTPPassword, host)
-	}
-	if err := smtp.SendMail(addr, auth, from, []string{to}, []byte(body.String())); err != nil {
-		log.Printf("smtp notification failed category=send host=%s", host)
-		return
 	}
 }
 
