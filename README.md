@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="internal/webui/assets/icon-512.png" alt="Polaris" width="128">
+</p>
+
 # Polaris
 
 Polaris is a lightweight, self-hosted VPS monitoring dashboard for small Linux servers. It uses Go's standard library, embeds the web UI into the dashboard binary, and does not require Node.js or an external database service.
