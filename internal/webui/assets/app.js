@@ -528,14 +528,10 @@
   function notificationStatusChip() {
     const cfg = state.config || {};
     const tgOn = !!cfg.telegram_enabled;
-    const mailOn = !!cfg.smtp_enabled;
     const tg = tgOn ? translate("enabled") : translate("disabled");
-    const mail = mailOn ? translate("enabled") : translate("disabled");
     const tgDot = tgOn ? '<span class="pulse-dot"></span>' : '<span class="notify-dot"></span>';
-    const mailDot = mailOn ? '<span class="pulse-dot"></span>' : '<span class="notify-dot"></span>';
     const tgWord = tgOn ? `<b class="status-ok">${esc(tg)}</b>` : `<b class="status-dim">${esc(tg)}</b>`;
-    const mailWord = mailOn ? `<b class="status-ok">${esc(mail)}</b>` : `<b class="status-dim">${esc(mail)}</b>`;
-    return `<div class="managed-chip managed-chip-bright"><span>${esc(translate("notificationStatus"))}</span><small>${tgDot} Telegram: ${tgWord}</small><small>${mailDot} Email: ${mailWord}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
+    return `<div class="managed-chip managed-chip-bright"><span>${esc(translate("notificationStatus"))}</span><small>${tgDot} Telegram: ${tgWord}</small><small>${esc(translate("quotaAlertThresholds"))}</small></div>`;
   }
 
   function geoStatusChip(node) {
