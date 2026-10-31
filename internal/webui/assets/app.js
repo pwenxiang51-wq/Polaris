@@ -202,6 +202,7 @@
         sitekey: siteKey,
         action: "login",
         theme: state.theme,
+        language: state.language === "zh" ? "zh-CN" : "en",
         callback: (token) => { state.turnstileToken = token; clearLoginError(); },
         "expired-callback": () => { state.turnstileToken = ""; },
         "error-callback": () => { state.turnstileToken = ""; },
