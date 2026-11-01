@@ -549,8 +549,11 @@
 
   function monthlySplitChip(monthlyCounted, monthlyQuota, monthlyIn, monthlyOut) {
     const ratio = monthlyQuota > 0 ? Math.min(100, monthlyCounted / monthlyQuota * 100) : 0;
-    return `<div class="managed-chip managed-chip-wide ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(translate("monthlyUsage"))}</span><strong>${fmtBytes(monthlyCounted)} / ${fmtBytes(monthlyQuota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div><div class="managed-split-body"><div><span>${esc(translate("inbound"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("outbound"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
+    const now = new Date();
+    const monthLabel = now.getUTCFullYear() + "-" + String(now.getUTCMonth() + 1).padStart(2, "0");
+    return `<div class="managed-chip managed-chip-wide ${ratio >= 90 ? "is-warning" : ""}"><span>${esc(translate("monthlyUsage"))} · ${monthLabel}</span><strong>${fmtBytes(monthlyCounted)} / ${fmtBytes(monthlyQuota)}</strong><div class="quota-track"><span style="width:${ratio.toFixed(2)}%"></span></div><div class="managed-split-body"><div><span>${esc(translate("inbound"))}</span><strong>${fmtBytes(monthlyIn)}</strong></div><div><span>${esc(translate("outbound"))}</span><strong>${fmtBytes(monthlyOut)}</strong></div><div><span>${esc(translate("countedQuota"))}</span><strong>${fmtBytes(monthlyCounted)}</strong></div></div>${ratio >= 90 ? `<small>${esc(translate("quotaNear"))}</small>` : ""}</div>`;
   }
+
 
   function sparklineScaled(values, stroke) {
     const filtered = values.filter((value) => Number.isFinite(Number(value))).map(Number);
