@@ -159,6 +159,8 @@
   }
 
   function showView(view) {
+    const shell = $("#loadingShell");
+    if (shell) shell.hidden = true;
     $("#authView").hidden = view !== "auth";
     $("#dashboardView").hidden = view !== "dashboard";
     if (view === "dashboard") startRefresh(); else stopRefresh();
@@ -244,14 +246,22 @@
     });
   }
 
+  function setLoadingText(text) {
+    const el = $("#loadingText");
+    if (el) el.textContent = text;
+  }
+
   async function initialize() {
     applyTheme();
     applyLanguage();
     try {
+      setLoadingText("Loading…");
       state.config = await request("/api/public-config");
       renderFooterAttribution(state.config);
+      setLoadingText("Loading verification…");
       loadTurnstile(state.config.turnstile_sitekey);
       try {
+        setLoadingText("Checking session…");
         await request("/api/me");
         showView("dashboard");
         await loadNodes();

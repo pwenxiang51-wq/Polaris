@@ -23,7 +23,7 @@
   <link rel="apple-touch-startup-image" href="/assets/apple-splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <link rel="apple-touch-startup-image" href="/assets/apple-splash-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
   <link rel="apple-touch-startup-image" href="/assets/apple-splash-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <style>html{background:#0b0f0d}</style>
+  <style>html{background:#0b0f0d}#loadingShell{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#0b0f0d;color:#f4f7f3;font-family:system-ui,sans-serif}#loadingSpinner{width:36px;height:36px;border:3px solid #1e2a22;border-top-color:#b4ff71;border-radius:50%;animation:loadingSpin 1s linear infinite}@keyframes loadingSpin{to{transform:rotate(360deg)}}#loadingText{font-size:14px;letter-spacing:.08em}@media (prefers-reduced-motion: reduce){#loadingSpinner{animation:none}}</style>
   <meta name="referrer" content="no-referrer">
   <title>Polaris · Server Monitor</title>
   <link rel="icon" type="image/svg+xml" href="/assets/polaris.svg">
@@ -32,6 +32,7 @@
   <script src="/assets/app.js" defer></script>
 </head>
 <body>
+  <div id="loadingShell" role="status" aria-live="polite"><div id="loadingSpinner"></div><div id="loadingText">Loading…</div></div>
   <div class="ambient ambient-one" aria-hidden="true"></div>
   <div class="ambient ambient-two" aria-hidden="true"></div>
   <div id="authView" class="auth-shell">
