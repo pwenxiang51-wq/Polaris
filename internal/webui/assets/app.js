@@ -129,11 +129,13 @@
     state.language = state.language === "en" ? "zh" : "en";
     safeStorageSet("polaris-language", state.language);
     applyLanguage();
+    rerenderTurnstile();
   }
 
   function toggleTheme() {
     state.theme = state.theme === "dark" ? "light" : "dark";
     applyTheme();
+    rerenderTurnstile();
   }
 
   async function request(path, options = {}) {
@@ -188,6 +190,27 @@
     }
   }
 
+  function renderTurnstile() {
+    if (!window.turnstile || !state.config || !state.config.turnstile_sitekey) return;
+    state.turnstileToken = "";
+    state.turnstileWidgetId = window.turnstile.render("#turnstileWidget", {
+      sitekey: state.config.turnstile_sitekey,
+      action: "login",
+      theme: state.theme,
+      language: state.language === "zh" ? "zh-CN" : "en",
+      callback: (token) => { state.turnstileToken = token; clearLoginError(); },
+      "expired-callback": () => { state.turnstileToken = ""; },
+      "error-callback": () => { state.turnstileToken = ""; },
+    });
+  }
+
+  function rerenderTurnstile() {
+    if (!window.turnstile || state.turnstileWidgetId === null) return;
+    window.turnstile.remove(state.turnstileWidgetId);
+    state.turnstileWidgetId = null;
+    renderTurnstile();
+  }
+
   function loadTurnstile(siteKey) {
     if (!siteKey) {
       $("#turnstileHint").textContent = translate("verificationNotConfigured");
@@ -199,16 +222,7 @@
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      if (!window.turnstile) return;
-      state.turnstileWidgetId = window.turnstile.render("#turnstileWidget", {
-        sitekey: siteKey,
-        action: "login",
-        theme: state.theme,
-        language: state.language === "zh" ? "zh-CN" : "en",
-        callback: (token) => { state.turnstileToken = token; clearLoginError(); },
-        "expired-callback": () => { state.turnstileToken = ""; },
-        "error-callback": () => { state.turnstileToken = ""; },
-      });
+      renderTurnstile();
     };
     script.onerror = () => { $("#turnstileHint").textContent = translate("humanVerification"); };
     document.head.appendChild(script);
