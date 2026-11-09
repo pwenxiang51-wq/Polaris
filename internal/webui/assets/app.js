@@ -198,9 +198,16 @@
       action: "login",
       theme: state.theme,
       language: state.language === "zh" ? "zh-CN" : "en",
+      retry: "auto",
+      "retry-interval": 15000,
       callback: (token) => { state.turnstileToken = token; clearLoginError(); },
       "expired-callback": () => { state.turnstileToken = ""; },
-      "error-callback": () => { state.turnstileToken = ""; },
+      "error-callback": () => {
+        state.turnstileToken = "";
+        const hint = document.getElementById("turnstileHint");
+        if (hint) hint.textContent = translate("humanVerification");
+      },
+      "timeout-callback": () => { state.turnstileToken = ""; },
     });
   }
 
