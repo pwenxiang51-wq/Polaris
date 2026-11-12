@@ -190,7 +190,7 @@ Local unit tests and static checks do not replace end-to-end verification on the
 
 ## License
 
-Copyright (c) 2026 pwenxiang51-wq. Copyright © 2026 Velox | All rights reserved.
+Copyright (c) 2026 VeloxSpace. Copyright © 2026 Velox | All rights reserved.
 
 Polaris is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
 

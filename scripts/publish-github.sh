@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-OWNER="${1:-pwenxiang51-wq}"
+OWNER="${1:-VeloxSpace}"
 REPO="${2:-polaris}"
 FULL_NAME="${OWNER}/${REPO}"
 EXPECTED_REMOTE="https://github.com/${FULL_NAME}.git"

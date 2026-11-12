@@ -24,10 +24,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pwenxiang51-wq/polaris/internal/security"
-	"github.com/pwenxiang51-wq/polaris/internal/shared"
-	"github.com/pwenxiang51-wq/polaris/internal/store"
-	"github.com/pwenxiang51-wq/polaris/internal/webui"
+	"github.com/VeloxSpace/polaris/internal/security"
+	"github.com/VeloxSpace/polaris/internal/shared"
+	"github.com/VeloxSpace/polaris/internal/store"
+	"github.com/VeloxSpace/polaris/internal/webui"
 )
 
 const sessionCookieName = "polaris_session"
@@ -353,7 +353,7 @@ func (a *App) publicConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	github := a.cfg.FooterGitHub
 	if github == "" {
-		github = "https://github.com/pwenxiang51-wq/Polaris"
+		github = "https://github.com/VeloxSpace/Polaris"
 	}
 	telegram := a.cfg.FooterTelegram
 	if telegram == "" {

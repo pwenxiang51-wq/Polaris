@@ -20,7 +20,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/pwenxiang51-wq/polaris/internal/shared"
+	"github.com/VeloxSpace/polaris/internal/shared"
 )
 
 var nodeIDPattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]{0,47}$`)

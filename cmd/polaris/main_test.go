@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pwenxiang51-wq/polaris/internal/store"
+	"github.com/VeloxSpace/polaris/internal/store"
 )
 
 func TestSessionRoundTripTamperingAndLogoutRevocation(t *testing.T) {

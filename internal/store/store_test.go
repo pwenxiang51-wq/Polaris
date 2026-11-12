@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pwenxiang51-wq/polaris/internal/shared"
+	"github.com/VeloxSpace/polaris/internal/shared"
 )
 
 func TestTokenIsStoredAsHashAndPersists(t *testing.T) {

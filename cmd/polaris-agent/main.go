@@ -21,7 +21,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pwenxiang51-wq/polaris/internal/shared"
+	"github.com/VeloxSpace/polaris/internal/shared"
 )
 
 const reportInterval = 15 * time.Second

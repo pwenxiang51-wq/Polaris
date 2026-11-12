@@ -1,3 +1,3 @@
-module github.com/pwenxiang51-wq/polaris
+module github.com/VeloxSpace/polaris
 
 go 1.23
