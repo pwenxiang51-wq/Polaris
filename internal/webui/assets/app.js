@@ -886,6 +886,10 @@
     $("#nodeModal").addEventListener("click", (event) => { if (nodeBackdropDown && event.target === $("#nodeModal")) closeNodeModal(); nodeBackdropDown = false; });
     $("#nodeForm").addEventListener("submit", createNodeToken);
     $("#refreshButton").addEventListener("click", loadNodes);
+    const backToTop = $("#backToTop");
+    const toggleBackToTop = () => backToTop.classList.toggle("visible", window.scrollY > 300);
+    window.addEventListener("scroll", toggleBackToTop, { passive: true });
+    backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
     $("#copyTokenButton").addEventListener("click", () => copyText(state.createdToken));
     $("#copyConfigButton").addEventListener("click", () => copyText($("#agentConfigSnippet").value));
     $("#revealTokenButton").addEventListener("click", () => {
