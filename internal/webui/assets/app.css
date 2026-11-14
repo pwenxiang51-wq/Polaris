@@ -43,7 +43,7 @@
   --shadow: 0 24px 70px rgba(31, 54, 37, .09);
 }
 * { box-sizing: border-box; }
-html { min-width: 320px; min-height: 100%; background: var(--bg); }
+html { min-width: 320px; min-height: 100%; background: var(--bg); overflow-x: hidden; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; min-height: 100vh; overflow-x: hidden; }
 button, input, textarea { font: inherit; }
 button { color: inherit; }
@@ -270,6 +270,7 @@ input:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px 
   .dashboard-main { padding-top: 32px; }
 }
 @media (max-width: 560px) {
+  .ambient { width: 320px; height: 320px; }
   .auth-shell { padding: 0 20px; }
   .auth-topbar { height: 72px; }
   .icon-button { min-height: 34px; padding: 0 8px; font-size: 11px; gap: 5px; }
